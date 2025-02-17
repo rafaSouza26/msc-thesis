@@ -8,21 +8,16 @@ ingarch.string <- function(object, padding=FALSE) {
   q <- if(is.null(past_mean)) 0 else length(past_mean)
   
   # Basic INGARCH string
-  result <- paste("INGARCH(", p, ",", q, ")", sep = "")
+  base_string <- sprintf("INGARCH(%d,%d)", p, q)
   
-  # Handle regression components
+  # Handle regression components and constant term
   if (!is.null(object$xreg)) {
-    if (NCOL(object$xreg) == 1 && is.element("drift", colnames(object$xreg))) {
-      result <- paste(result, "with drift        ")
-    } else {
-      result <- paste("Regression with", result, "errors")
-    }
+    result <- paste("Regression with", base_string, "errors")
   } else {
-    # Check for intercept
-    if (!is.null(object$intercept) && object$intercept) {
-      result <- paste(result, "with non-zero mean")
+    if (!is.null(object$constant) && object$constant) {
+      result <- paste(base_string, "with non-zero mean")
     } else {
-      result <- paste(result, "                  ")
+      result <- paste(base_string, "with zero mean    ")
     }
   }
   

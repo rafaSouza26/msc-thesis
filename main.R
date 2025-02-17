@@ -51,7 +51,7 @@ fitted_model <- try({
     distribution = "poisson",
     link = "identity",
     trace = TRUE,
-    nmodels = 50
+    nmodels = 100
   )
 })
 

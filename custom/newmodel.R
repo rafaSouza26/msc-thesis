@@ -1,4 +1,4 @@
-newmodel <- function(p, d, q, D, constant, results) {
+newmodel <- function(p, q, constant, results) {
   n <- nrow(results)
   for (i in 1:n) {
     if(!all(is.na(results[i, 1:3]))) {  # Check only p, q, constant
