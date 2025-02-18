@@ -133,45 +133,36 @@ auto.ingarch <- function(y,
   
   results[1, ] <- c(p, q, constant, bestfit$ic)
   
-  # Try alternative constant setting
-  alt_fit <- myingarch(x, order = c(p, q), constant = !constant, ic = ic, 
-                       trace = trace, xreg = xreg, 
-                       distr = distribution, link = link, ...)
   
-  results[2, ] <- c(p, q, !constant, alt_fit$ic)
+  k <- 1
   
-  if (alt_fit$ic < bestfit$ic) {
-    bestfit <- alt_fit
-    constant <- !constant
+  # Fit (0,0) model
+  fit <- myingarch(x, constant = constant, ic = ic,
+                   trace = trace, xreg = xreg,
+                   distr = distribution, link = link,...)
+  results[k, ] <- c(0, 0, constant, fit$ic)
+  
+  if (fit$ic < bestfit$ic) {
+    bestfit <- fit
+    # This is symbolical!! Not passing any past_obs or past_mean is the real (0, 0)
+    # Do not pass (0, 0)
+    p <- 0
+    q <- 0
   }
   
-  k <- 2
-  
-  # Fit (0,0) model if not already tried
-  if (p != 0 || q != 0) {
-    k <- k + 1
-    fit <- myingarch(x, order = c(0, 0), constant = constant, ic = ic,
-                     trace = trace, xreg = xreg,
-                     distr = distribution, link = link, ...)
-    results[k, ] <- c(0, 0, constant, fit$ic)
-    
-    if (fit$ic < bestfit$ic) {
-      bestfit <- fit
-      p <- 0
-      q <- 0
-    }
-  }
+  k <- k + 1
   
   # Basic model with only past observations (p)
   if (max.p > 0 && (p != 1 || q != 0)) {
     k <- k + 1
-    fit <- myingarch(x, order = c(1, 0), constant = constant, ic = ic,
+    fit <- myingarch(x, order = c(1, NULL), constant = constant, ic = ic,
                      trace = trace, xreg = xreg,
                      distr = distribution, link = link, ...)
     results[k, ] <- c(1, 0, constant, fit$ic)
     
     if (fit$ic < bestfit$ic) {
       bestfit <- fit
+      # This is symbolical!! Not passing any past_obs or past_mean is the real (0, 0)
       p <- 1
       q <- 0
     }
@@ -180,24 +171,25 @@ auto.ingarch <- function(y,
   # Basic model with only past means (q)
   if (max.q > 0 && (p != 0 || q != 1)) {
     k <- k + 1
-    fit <- myingarch(x, order = c(0, 1), constant = constant, ic = ic,
+    fit <- myingarch(x, order = c(NULL, 1), constant = constant, ic = ic,
                      trace = trace, xreg = xreg,
                      distr = distribution, link = link, ...)
     results[k, ] <- c(0, 1, constant, fit$ic)
     
     if (fit$ic < bestfit$ic) {
       bestfit <- fit
+      # This is symbolical!! Not passing any past_obs or past_mean is the real (0, 0)
       p <- 0
       q <- 1
     }
   }
   
-  # Fit (1,1) model if not already tried
+  # Fit (1,1) model
   if (p != 1 || q != 1) {
     k <- k + 1
     fit <- myingarch(x, order = c(1, 1), constant = constant, ic = ic,
                      trace = trace, xreg = xreg,
-                     distr = distribution, link = link, ...)
+                     distr = distribution, link = link,...)
     results[k, ] <- c(1, 1, constant, fit$ic)
     
     if (fit$ic < bestfit$ic) {
@@ -337,6 +329,11 @@ auto.ingarch <- function(y,
   
   if (trace) {
     cat("\n\n Best model:", ingarch.string(bestfit, padding = TRUE), "\n\n")
+  }
+  
+  if (!is.null(bestfit$coefficients)) {
+    # Add minimum threshold for parameters to prevent convergence to zero
+    bestfit$coefficients[bestfit$coefficients < 1e-4] <- 1e-4
   }
   
   return(bestfit)

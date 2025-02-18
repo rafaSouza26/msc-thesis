@@ -15,10 +15,10 @@ set.seed(123)
 #  - yesterday's expected count (past_mean = 0.4)
 #  - a baseline level (intercept = 1.5)
 simulated_data <- ingarch.sim(
-  n = 1000,           # Generate 200 observations
+  n = 500,           # Generate 500 observations
   param = list(
     intercept = 1.5, # Baseline level
-    past_obs = 0.3,  # Effect of yesterday's count
+    past_obs = 0.5,  # Effect of yesterday's count
     past_mean = 0.4  # Effect of yesterday's expectation
   ),
   model = list(

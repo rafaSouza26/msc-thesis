@@ -1,4 +1,4 @@
-myingarch <- function(x, order = c(0, 0), constant = TRUE, ic = "aic", trace = FALSE,
+myingarch <- function(x, order = c(NULL, NULL), constant = TRUE, ic = "aic", trace = FALSE,
                       xreg = NULL, distr = "poisson", link = "log", ...) {
   # Input validation
   if (!is.numeric(x)) {
@@ -9,21 +9,27 @@ myingarch <- function(x, order = c(0, 0), constant = TRUE, ic = "aic", trace = F
     stop("constant must be logical (TRUE/FALSE)")
   }
   
-  if (!all(order >= 0) || !all(order == floor(order))) {
-    stop("Model orders must be non-negative integers")
-  }
+  # if (!all(order >= 0) || !all(is.null(order))) {
+  #   stop("Model orders must be non-negative integers")
+  # }
   
   # Match arguments
   distr <- match.arg(distr, choices = c("poisson", "nbinom"))
   link <- match.arg(link, choices = c("log", "identity"))
   ic <- match.arg(ic, choices = c("aic", "aicc", "bic", "qic"))
   
+  # Convert x to time series if it isn't already
+  x <- as.ts(x)
+  
   # Prepare model specification
+  cat(if(!is.null(order[1]) && order[1] > 0) 1:order[1] else NULL)
+  
   model_spec <- list(
-    past_obs = if(order[1] > 0) 1:order[1] else NULL,    # p parameter
-    past_mean = if(order[2] > 0) 1:order[2] else NULL,   # q parameter
+    past_obs = if(!is.null(order[1]) && order[1] > 0) 1:order[1] else NULL,    # p parameter
+    past_mean = if(!is.null(order[2])) 1:order[2] else NULL,   # q parameter
     external = !is.null(xreg)
   )
+
   
   # Handle external regressors
   if (!is.null(xreg)) {
@@ -39,31 +45,52 @@ myingarch <- function(x, order = c(0, 0), constant = TRUE, ic = "aic", trace = F
   # Try fitting model
   tryCatch({
     # Prepare xreg for constant handling
-    if (!constant) {
-      xreg_modified <- if(is.null(xreg)) {
-        matrix(0, nrow = length(x), ncol = 1)
-      } else {
-        cbind(0, xreg)
-      }
-      colnames(xreg_modified)[1] <- "intercept"
-      
-      fit <- tscount::tsglm(
-        ts = x,
-        model = model_spec,
-        xreg = xreg_modified,
-        distr = distr,
-        link = link,
-        ...
-      )
-    } else {
-      fit <- tscount::tsglm(
-        ts = x,
-        model = model_spec,
-        xreg = xreg,
-        distr = distr,
-        link = link,
-        ...
-      )
+    final_xreg <- xreg
+    
+    # if (!constant) {
+    #   final_xreg <- if(is.null(xreg)) {
+    #     matrix(0, nrow = length(x), ncol = 1)
+    #   } else {
+    #     cbind(0, xreg)
+    #   }
+    #   colnames(final_xreg)[1] <- "intercept"
+    # }
+    
+    # Create the model formula
+    fit <- tscount::tsglm(
+      ts = x,
+      model = model_spec,
+      xreg = final_xreg,
+      distr = distr,
+      link = link,
+      ...
+    )
+    
+    # Set class
+    class(fit) <- c("forecast_tsglm", "tsglm", "tscount")
+    
+    # Ensure all required elements are present
+    fit$ts <- x
+    fit$model <- model_spec
+    fit$xreg <- final_xreg
+    fit$distr <- distr
+    fit$link <- link
+    
+    # Add required elements that might be missing
+    if (is.null(fit$coefficients)) fit$coefficients <- fit$coefficients
+    if (is.null(fit$start)) fit$start <- fit$start
+    if (is.null(fit$n.iter)) fit$n.iter <- 1
+    if (is.null(fit$runtime)) fit$runtime <- 0
+    if (is.null(fit$score)) fit$score <- numeric(0)
+    if (is.null(fit$info.matrix)) fit$info.matrix <- matrix(0, 0, 0)
+    if (is.null(fit$info.matrix_corrected)) fit$info.matrix_corrected <- matrix(0, 0, 0)
+    if (is.null(fit$inter_par)) fit$inter_par <- list()
+    if (is.null(fit$residuals)) {
+      fit$residuals <- x - fit$fitted.values
+    }
+    if (is.null(fit$response)) fit$response <- x
+    if (is.null(fit$linear.predictors)) {
+      fit$linear.predictors <- fit$fitted.values
     }
     
     # Calculate effective sample size and number of parameters
@@ -84,20 +111,6 @@ myingarch <- function(x, order = c(0, 0), constant = TRUE, ic = "aic", trace = F
       warning("Non-finite log-likelihood obtained")
       return(list(ic = Inf))
     }
-    
-    # Add required elements for tsglm class
-    fit$ts <- x
-    fit$model <- model_spec
-    fit$distribution <- distr
-    fit$link <- link
-    fit$start <- fit$start
-    fit$n.iter <- fit$n.iter
-    fit$runtime <- fit$runtime
-    fit$score <- if(!is.null(fit$score)) fit$score else NULL
-    fit$info <- if(!is.null(fit$info)) fit$info else NULL
-    fit$inter_par <- NULL
-    fit$residuals <- fit$residuals
-    fit$response <- x
     
     # Calculate AIC
     fit$aic <- -2 * loglik + 2 * npar
@@ -120,10 +133,14 @@ myingarch <- function(x, order = c(0, 0), constant = TRUE, ic = "aic", trace = F
                      aicc = fit$aicc,
                      qic = fit$aic)  # QIC defaults to AIC for now
     
-    # Store model parameters
-    fit$order <- order
-    fit$constant <- constant
-    fit$xreg <- if (!constant && !is.null(xreg)) xreg[, -1, drop = FALSE] else xreg
+    # Store additional model parameters
+    # fit$order <- order
+    # fit$constant <- constant
+    # fit$n_obs <- length(x)
+    # fit$n_eff <- nstar
+    # fit$call <- match.call()
+    # fit$distrcoefs <- if(distr == "nbinom") list(size = fit$distrcoefs$size) else NULL
+    # fit$sigmasq <- if(distr == "nbinom") fit$sigmasq else 0
     
     if (trace) {
       cat("\n", ingarch.string(fit, padding = TRUE))
@@ -131,8 +148,6 @@ myingarch <- function(x, order = c(0, 0), constant = TRUE, ic = "aic", trace = F
       cat(" :", fit$ic)
     }
     
-    # Set appropriate class and return
-    class(fit) <- c("forecast_tsglm", "tsglm", "tscount")
     return(fit)
     
   }, error = function(e) {
@@ -143,6 +158,13 @@ myingarch <- function(x, order = c(0, 0), constant = TRUE, ic = "aic", trace = F
       cat(" :", Inf)
       cat("\nError: ", conditionMessage(e), "\n")
     }
-    return(list(ic = Inf))
+    return(list(
+      ic = Inf,
+      error = conditionMessage(e),
+      order = order,
+      constant = constant,
+      distr = distr,
+      link = link
+    ))
   })
 }
