@@ -71,6 +71,12 @@ auto.ingarch <- function(y,
     if(is.null(colnames(xreg))) {
       colnames(xreg) <- paste0("xreg", 1:NCOL(xreg))
     }
+    
+    # Add check for non-negative xreg when using identity link
+    link <- match.arg(link)
+    if(link == "identity" && any(xreg < 0)) {
+      stop("When using 'identity' link, all values in xreg must be non-negative")
+    }
   }
   
   # Check for constant data
