@@ -133,19 +133,18 @@ auto.ingarch <- function(y,
   
   results[1, ] <- c(p, q, constant, bestfit$ic)
   
-  
   k <- 1
   
-  # Fit (0,0) model
+  # Fit (0,0) model - don't pass the order parameter at all to avoid NA/NULL issues
+  # When no order parameter is passed, myingarch defaults to c(NULL, NULL)
   fit <- myingarch(x, constant = constant, ic = ic,
                    trace = trace, xreg = xreg,
-                   distr = distribution, link = link,...)
+                   distr = distribution, link = link, ...)
   results[k, ] <- c(0, 0, constant, fit$ic)
   
   if (fit$ic < bestfit$ic) {
     bestfit <- fit
-    # This is symbolical!! Not passing any past_obs or past_mean is the real (0, 0)
-    # Do not pass (0, 0)
+    # Symbolically track that we've selected a (0,0) model
     p <- 0
     q <- 0
   }

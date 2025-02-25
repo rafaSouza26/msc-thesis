@@ -9,10 +9,6 @@ myingarch <- function(x, order = c(NULL, NULL), constant = TRUE, ic = "aic", tra
     stop("constant must be logical (TRUE/FALSE)")
   }
   
-  # if (!all(order >= 0) || !all(is.null(order))) {
-  #   stop("Model orders must be non-negative integers")
-  # }
-  
   # Match arguments
   distr <- match.arg(distr, choices = c("poisson", "nbinom"))
   link <- match.arg(link, choices = c("log", "identity"))
@@ -21,15 +17,16 @@ myingarch <- function(x, order = c(NULL, NULL), constant = TRUE, ic = "aic", tra
   # Convert x to time series if it isn't already
   x <- as.ts(x)
   
-  # Prepare model specification
-  cat(if(!is.null(order[1]) && order[1] > 0) 1:order[1] else NULL)
+  # Properly handle order parameters for p and q with safer conditional checks
+  # Make sure we check both NULL and NA values
+  p_order <- if(!is.null(order) && length(order) >= 1 && !is.null(order[1]) && !is.na(order[1]) && order[1] > 0) 1:order[1] else NULL
+  q_order <- if(!is.null(order) && length(order) >= 2 && !is.null(order[2]) && !is.na(order[2]) && order[2] > 0) 1:order[2] else NULL
   
   model_spec <- list(
-    past_obs = if(!is.null(order[1]) && order[1] > 0) 1:order[1] else NULL,    # p parameter
-    past_mean = if(!is.null(order[2])) 1:order[2] else NULL,   # q parameter
+    past_obs = p_order,    # p parameter
+    past_mean = q_order,   # q parameter
     external = !is.null(xreg)
   )
-
   
   # Handle external regressors
   if (!is.null(xreg)) {
@@ -42,25 +39,19 @@ myingarch <- function(x, order = c(NULL, NULL), constant = TRUE, ic = "aic", tra
     }
   }
   
+  # Get the maximum lag for effective sample size calculation
+  max_order <- max(
+    if(is.null(p_order)) 0 else max(p_order),
+    if(is.null(q_order)) 0 else max(q_order)
+  )
+  
   # Try fitting model
   tryCatch({
-    # Prepare xreg for constant handling
-    final_xreg <- xreg
-    
-    # if (!constant) {
-    #   final_xreg <- if(is.null(xreg)) {
-    #     matrix(0, nrow = length(x), ncol = 1)
-    #   } else {
-    #     cbind(0, xreg)
-    #   }
-    #   colnames(final_xreg)[1] <- "intercept"
-    # }
-    
     # Create the model formula
     fit <- tscount::tsglm(
       ts = x,
       model = model_spec,
-      xreg = final_xreg,
+      xreg = xreg,
       distr = distr,
       link = link,
       ...
@@ -72,29 +63,19 @@ myingarch <- function(x, order = c(NULL, NULL), constant = TRUE, ic = "aic", tra
     # Ensure all required elements are present
     fit$ts <- x
     fit$model <- model_spec
-    fit$xreg <- final_xreg
+    fit$xreg <- xreg
     fit$distr <- distr
     fit$link <- link
+    fit$constant <- constant
     
     # Add required elements that might be missing
-    if (is.null(fit$coefficients)) fit$coefficients <- fit$coefficients
-    if (is.null(fit$start)) fit$start <- fit$start
-    if (is.null(fit$n.iter)) fit$n.iter <- 1
-    if (is.null(fit$runtime)) fit$runtime <- 0
-    if (is.null(fit$score)) fit$score <- numeric(0)
-    if (is.null(fit$info.matrix)) fit$info.matrix <- matrix(0, 0, 0)
-    if (is.null(fit$info.matrix_corrected)) fit$info.matrix_corrected <- matrix(0, 0, 0)
-    if (is.null(fit$inter_par)) fit$inter_par <- list()
+    if (is.null(fit$coefficients)) fit$coefficients <- numeric(0)
     if (is.null(fit$residuals)) {
       fit$residuals <- x - fit$fitted.values
     }
-    if (is.null(fit$response)) fit$response <- x
-    if (is.null(fit$linear.predictors)) {
-      fit$linear.predictors <- fit$fitted.values
-    }
     
     # Calculate effective sample size and number of parameters
-    nstar <- length(x) - max(order)
+    nstar <- length(x) - max_order
     if (nstar <= 0) {
       stop("Insufficient data for the specified model order")
     }
@@ -133,15 +114,6 @@ myingarch <- function(x, order = c(NULL, NULL), constant = TRUE, ic = "aic", tra
                      aicc = fit$aicc,
                      qic = fit$aic)  # QIC defaults to AIC for now
     
-    # Store additional model parameters
-    # fit$order <- order
-    # fit$constant <- constant
-    # fit$n_obs <- length(x)
-    # fit$n_eff <- nstar
-    # fit$call <- match.call()
-    # fit$distrcoefs <- if(distr == "nbinom") list(size = fit$distrcoefs$size) else NULL
-    # fit$sigmasq <- if(distr == "nbinom") fit$sigmasq else 0
-    
     if (trace) {
       cat("\n", ingarch.string(fit, padding = TRUE))
       cat(" (", distr, " distribution, ", link, " link)", sep="")
@@ -152,7 +124,9 @@ myingarch <- function(x, order = c(NULL, NULL), constant = TRUE, ic = "aic", tra
     
   }, error = function(e) {
     if (trace) {
-      cat("\n INGARCH(", order[1], ",", order[2], ")", sep = "")
+      p_val <- if(is.null(order) || length(order) < 1 || is.null(order[1]) || is.na(order[1])) 0 else order[1]
+      q_val <- if(is.null(order) || length(order) < 2 || is.null(order[2]) || is.na(order[2])) 0 else order[2]
+      cat("\n INGARCH(", p_val, ",", q_val, ")", sep = "")
       cat(if(constant) " with non-zero mean" else " with zero mean    ")
       cat(" (", distr, " distribution, ", link, " link)", sep="")
       cat(" :", Inf)
