@@ -86,7 +86,6 @@ myingarch <- function(x, order = c(NULL, NULL), ic = "aic", trace = FALSE,
     fit$xreg <- xreg
     fit$distr <- distr
     fit$link <- link
-    fit$constant <- TRUE  # Always set to TRUE since we're always including the intercept
     
     # Store original order values for reference
     fit$orig_order <- c(orig_p, orig_q)

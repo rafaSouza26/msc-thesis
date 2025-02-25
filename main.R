@@ -27,7 +27,8 @@ simulated_data <- ingarch.sim(
     external = FALSE # No external regressors
   ),
   link = "identity", # Use identity link function
-  distr = "poisson"  # Use Poisson distribution
+  distr = "nbinom",  # Use Poisson distribution
+  size = 2            # Needs to be specified when using nbinom
 )
 
 # Convert to time series object for model fitting
@@ -48,9 +49,10 @@ fitted_model <- try({
     y = ts_data,
     max.p = 2,        # Maximum AR order (true is 1)
     max.q = 2,        # Maximum MA order (true is 1)
-    distribution = "poisson",
-    link = "identity",
+    distribution = "nbinom",
+    link = "log",
     trace = TRUE,
+    show_warnings = TRUE,
     nmodels = 100
   )
 })

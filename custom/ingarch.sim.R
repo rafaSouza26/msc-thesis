@@ -4,7 +4,7 @@ ingarch.sim <- function(n, param = list(intercept = 1, past_obs = NULL, past_mea
                         xreg = NULL,
                         link = c("identity", "log"),
                         distr = c("poisson", "nbinom"),
-                        distrcoefs = NULL,
+                        size = NULL,
                         fit = NULL, 
                         n_start = 50) {
   
@@ -67,10 +67,10 @@ ingarch.sim <- function(n, param = list(intercept = 1, past_obs = NULL, past_mea
   
   # Validate distribution parameters
   if (distr == "nbinom") {
-    if (is.null(distrcoefs) || is.null(distrcoefs$size)) {
+    if (is.null(size)) {
       stop("size parameter must be provided for negative binomial distribution")
     }
-    if (!is.numeric(distrcoefs$size) || distrcoefs$size <= 0) {
+    if (!is.numeric(size) || size <= 0) {
       stop("size parameter must be positive for negative binomial distribution")
     }
   }
@@ -108,7 +108,7 @@ ingarch.sim <- function(n, param = list(intercept = 1, past_obs = NULL, past_mea
       xreg = xreg,
       link = link,
       distr = distr,
-      distrcoefs = distrcoefs,
+      distrcoefs = size,
       n_start = n_start
     )
     
