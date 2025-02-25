@@ -1,12 +1,9 @@
-myingarch <- function(x, order = c(NULL, NULL), constant = TRUE, ic = "aic", trace = FALSE,
+myingarch <- function(x, order = c(NULL, NULL), ic = "aic", trace = FALSE,
                       xreg = NULL, distr = "poisson", link = "log", ...) {
+  
   # Input validation
   if (!is.numeric(x)) {
     stop("Input time series 'x' must be numeric")
-  }
-  
-  if (!is.logical(constant)) {
-    stop("constant must be logical (TRUE/FALSE)")
   }
   
   # Match arguments
@@ -17,10 +14,33 @@ myingarch <- function(x, order = c(NULL, NULL), constant = TRUE, ic = "aic", tra
   # Convert x to time series if it isn't already
   x <- as.ts(x)
   
-  # Properly handle order parameters for p and q with safer conditional checks
-  # Make sure we check both NULL and NA values
-  p_order <- if(!is.null(order) && length(order) >= 1 && !is.null(order[1]) && !is.na(order[1]) && order[1] > 0) 1:order[1] else NULL
-  q_order <- if(!is.null(order) && length(order) >= 2 && !is.null(order[2]) && !is.na(order[2]) && order[2] > 0) 1:order[2] else NULL
+  # Store original order values for trace output
+  # Interpret 0 as NULL for p and q
+  orig_p <- if(!is.null(order) && length(order) >= 1) {
+    if(is.null(order[1]) || is.na(order[1]))
+      0 
+    else
+      order[1]
+  } else 0
+  
+  orig_q <- if(!is.null(order) && length(order) >= 2) {
+    if(is.null(order[2]) || is.na(order[2]))
+      0 
+    else
+      order[2]
+  } else 0
+  
+  # Handle 0 values: convert them to NULL for tscount compatibility
+  # For non-zero values, create proper sequence
+  p_order <- if(!is.null(order) && length(order) >= 1) {
+    if(is.null(order[1]) || is.na(order[1]) || order[1] == 0) NULL 
+    else 1:order[1]
+  } else NULL
+  
+  q_order <- if(!is.null(order) && length(order) >= 2) {
+    if(is.null(order[2]) || is.na(order[2]) || order[2] == 0) NULL 
+    else 1:order[2]
+  } else NULL
   
   model_spec <- list(
     past_obs = p_order,    # p parameter
@@ -66,10 +86,15 @@ myingarch <- function(x, order = c(NULL, NULL), constant = TRUE, ic = "aic", tra
     fit$xreg <- xreg
     fit$distr <- distr
     fit$link <- link
-    fit$constant <- constant
+    fit$constant <- TRUE  # Always set to TRUE since we're always including the intercept
+    
+    # Store original order values for reference
+    fit$orig_order <- c(orig_p, orig_q)
     
     # Add required elements that might be missing
-    if (is.null(fit$coefficients)) fit$coefficients <- numeric(0)
+    if (is.null(fit$coefficients))
+      fit$coefficients <- numeric(0)
+    
     if (is.null(fit$residuals)) {
       fit$residuals <- x - fit$fitted.values
     }
@@ -80,11 +105,8 @@ myingarch <- function(x, order = c(NULL, NULL), constant = TRUE, ic = "aic", tra
       stop("Insufficient data for the specified model order")
     }
     
-    # Count parameters
+    # Count parameters - always include intercept
     npar <- length(coef(fit))
-    if (!constant) {
-      npar <- npar - 1  # Subtract the constrained intercept
-    }
     
     # Calculate information criteria
     loglik <- fit$logLik
@@ -115,7 +137,9 @@ myingarch <- function(x, order = c(NULL, NULL), constant = TRUE, ic = "aic", tra
                      qic = fit$aic)  # QIC defaults to AIC for now
     
     if (trace) {
-      cat("\n", ingarch.string(fit, padding = TRUE))
+      # Use the original order values for trace output
+      cat("\n INGARCH(", orig_p, ",", orig_q, ")", sep = "")
+      cat(" with non-zero mean")  # Always show "with non-zero mean"
       cat(" (", distr, " distribution, ", link, " link)", sep="")
       cat(" :", fit$ic)
     }
@@ -124,10 +148,8 @@ myingarch <- function(x, order = c(NULL, NULL), constant = TRUE, ic = "aic", tra
     
   }, error = function(e) {
     if (trace) {
-      p_val <- if(is.null(order) || length(order) < 1 || is.null(order[1]) || is.na(order[1])) 0 else order[1]
-      q_val <- if(is.null(order) || length(order) < 2 || is.null(order[2]) || is.na(order[2])) 0 else order[2]
-      cat("\n INGARCH(", p_val, ",", q_val, ")", sep = "")
-      cat(if(constant) " with non-zero mean" else " with zero mean    ")
+      cat("\n INGARCH(", orig_p, ",", orig_q, ")", sep = "")
+      cat(" with non-zero mean")  # Always show "with non-zero mean"
       cat(" (", distr, " distribution, ", link, " link)", sep="")
       cat(" :", Inf)
       cat("\nError: ", conditionMessage(e), "\n")
@@ -135,8 +157,8 @@ myingarch <- function(x, order = c(NULL, NULL), constant = TRUE, ic = "aic", tra
     return(list(
       ic = Inf,
       error = conditionMessage(e),
-      order = order,
-      constant = constant,
+      order = c(orig_p, orig_q),
+      constant = TRUE,  # Always set to TRUE
       distr = distr,
       link = link
     ))

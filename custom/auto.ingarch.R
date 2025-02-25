@@ -1,8 +1,4 @@
-source("./custom/myingarch.R")
-source("./custom/ingarch.string.R")
 source("./custom/newmodel.R")
-library(tscount)
-library(forecast)
 
 auto.ingarch <- function(y, 
                          max.p = 5,           # Maximum AR order
@@ -11,7 +7,6 @@ auto.ingarch <- function(y,
                          start.q = 2,         # Starting MA order
                          distribution = c("poisson", "nbinom"),  # Distribution family
                          link = c("log", "identity"),        # Link function
-                         constant = TRUE,     # Whether to include constant term
                          xreg = NULL,         # External covariates
                          ic = c("aicc", "aic", "bic", "qic"),  # Information criterion
                          stepwise = TRUE,     # Whether to use stepwise selection
@@ -124,44 +119,45 @@ auto.ingarch <- function(y,
   p <- start.p <- min(start.p, max.p)
   q <- start.q <- min(start.q, max.q)
   
-  results <- matrix(NA, nrow = nmodels, ncol = 4)
+  # Initialize results matrix with NA values - will store model configurations and their ICs
+  results <- matrix(NA, nrow = nmodels, ncol = 3)
+  colnames(results) <- c("p", "q", "ic")
   
-  # Initial model with user-specified constant
-  bestfit <- myingarch(x, order = c(p, q), constant = constant, ic = ic, 
+  # Initial model with intercept
+  bestfit <- myingarch(x, order = c(p, q), ic = ic, 
                        trace = trace, xreg = xreg, 
                        distr = distribution, link = link, ...)
   
-  results[1, ] <- c(p, q, constant, bestfit$ic)
+  results[1, ] <- c(p, q, bestfit$ic)
   
   k <- 1
   
-  # Fit (0,0) model - don't pass the order parameter at all to avoid NA/NULL issues
-  # When no order parameter is passed, myingarch defaults to c(NULL, NULL)
-  fit <- myingarch(x, constant = constant, ic = ic,
+  # Fit (0,0) model - explicitly passing order=c(0,0)
+  k <- k + 1
+  fit <- myingarch(x, order = c(0, 0), ic = ic,
                    trace = trace, xreg = xreg,
                    distr = distribution, link = link, ...)
-  results[k, ] <- c(0, 0, constant, fit$ic)
+  
+  results[k, ] <- c(0, 0, fit$ic)
   
   if (fit$ic < bestfit$ic) {
     bestfit <- fit
-    # Symbolically track that we've selected a (0,0) model
     p <- 0
     q <- 0
   }
   
-  k <- k + 1
-  
   # Basic model with only past observations (p)
   if (max.p > 0 && (p != 1 || q != 0)) {
     k <- k + 1
-    fit <- myingarch(x, order = c(1, NULL), constant = constant, ic = ic,
+    
+    fit <- myingarch(x, order = c(1, 0), ic = ic,
                      trace = trace, xreg = xreg,
                      distr = distribution, link = link, ...)
-    results[k, ] <- c(1, 0, constant, fit$ic)
+    
+    results[k, ] <- c(1, 0, fit$ic)
     
     if (fit$ic < bestfit$ic) {
       bestfit <- fit
-      # This is symbolical!! Not passing any past_obs or past_mean is the real (0, 0)
       p <- 1
       q <- 0
     }
@@ -170,49 +166,43 @@ auto.ingarch <- function(y,
   # Basic model with only past means (q)
   if (max.q > 0 && (p != 0 || q != 1)) {
     k <- k + 1
-    fit <- myingarch(x, order = c(NULL, 1), constant = constant, ic = ic,
+    
+    fit <- myingarch(x, order = c(0, 1), ic = ic,
                      trace = trace, xreg = xreg,
                      distr = distribution, link = link, ...)
-    results[k, ] <- c(0, 1, constant, fit$ic)
+    
+    results[k, ] <- c(0, 1, fit$ic)
     
     if (fit$ic < bestfit$ic) {
       bestfit <- fit
-      # This is symbolical!! Not passing any past_obs or past_mean is the real (0, 0)
       p <- 0
-      q <- 1
-    }
-  }
-  
-  # Fit (1,1) model
-  if (p != 1 || q != 1) {
-    k <- k + 1
-    fit <- myingarch(x, order = c(1, 1), constant = constant, ic = ic,
-                     trace = trace, xreg = xreg,
-                     distr = distribution, link = link,...)
-    results[k, ] <- c(1, 1, constant, fit$ic)
-    
-    if (fit$ic < bestfit$ic) {
-      bestfit <- fit
-      p <- 1
       q <- 1
     }
   }
   
   startk <- 0
   
-  cat("\nFitting through step-wise now...\n")
+  if (trace) {
+    cat("\nFitting through step-wise now...\n")
+  }
   
   # Stepwise search loop
   while (startk < k && k < nmodels) {
     startk <- k
     
     # Try decreasing p
-    if (p > 0 && newmodel(p - 1, q, constant, results[1:k, ])) {
-      k <- k + 1; if(k>nmodels) next
-      fit <- myingarch(x, order = c(p - 1, q), constant = constant, ic = ic,
+    if (p > 0 && newmodel(p - 1, q, results[1:k, ])) {
+      k <- k + 1; 
+      
+      if(k > nmodels)
+        break
+      
+      fit <- myingarch(x, order = c(p - 1, q), ic = ic,
                        trace = trace, xreg = xreg,
                        distr = distribution, link = link, ...)
-      results[k, ] <- c(p - 1, q, constant, fit$ic)
+      
+      results[k, ] <- c(p - 1, q, fit$ic)
+      
       if (fit$ic < bestfit$ic) {
         bestfit <- fit
         p <- p - 1
@@ -221,12 +211,18 @@ auto.ingarch <- function(y,
     }
     
     # Try increasing q
-    if (q < max.q && newmodel(p, q + 1, constant, results[1:k, ])) {
-      k <- k + 1; if(k>nmodels) next
-      fit <- myingarch(x, order = c(p, q + 1), constant = constant, ic = ic,
+    if (q < max.q && newmodel(p, q + 1, results[1:k, ])) {
+      k <- k + 1;
+      
+      if(k > nmodels)
+        break
+      
+      fit <- myingarch(x, order = c(p, q + 1), ic = ic,
                        trace = trace, xreg = xreg,
                        distr = distribution, link = link, ...)
-      results[k, ] <- c(p, q + 1, constant, fit$ic)
+      
+      results[k, ] <- c(p, q + 1, fit$ic)
+      
       if (fit$ic < bestfit$ic) {
         bestfit <- fit
         q <- (q + 1)
@@ -235,12 +231,18 @@ auto.ingarch <- function(y,
     }
     
     # Try decreasing both p and q
-    if (q > 0 && p > 0 && newmodel(p - 1, q - 1, constant, results[1:k, ])) {
-      k <- k + 1; if(k>nmodels) next
-      fit <- myingarch(x, order = c(p - 1, q - 1), constant = constant, ic = ic,
+    if (q > 0 && p > 0 && newmodel(p - 1, q - 1, results[1:k, ])) {
+      k <- k + 1;
+      
+      if(k > nmodels)
+        break
+      
+      fit <- myingarch(x, order = c(p - 1, q - 1), ic = ic,
                        trace = trace, xreg = xreg,
                        distr = distribution, link = link, ...)
-      results[k, ] <- c(p - 1, q - 1, constant, fit$ic)
+      
+      results[k, ] <- c(p - 1, q - 1, fit$ic)
+      
       if (fit$ic < bestfit$ic) {
         bestfit <- fit
         q <- (q - 1)
@@ -250,12 +252,18 @@ auto.ingarch <- function(y,
     }
     
     # Try decreasing p and increasing q
-    if (q < max.q && p > 0 && newmodel(p - 1, q + 1, constant, results[1:k, ])) {
-      k <- k + 1; if(k>nmodels) next
-      fit <- myingarch(x, order = c(p - 1, q + 1), constant = constant, ic = ic,
+    if (q < max.q && p > 0 && newmodel(p - 1, q + 1, results[1:k, ])) {
+      k <- k + 1;
+      
+      if(k > nmodels)
+        break
+      
+      fit <- myingarch(x, order = c(p - 1, q + 1), ic = ic,
                        trace = trace, xreg = xreg,
                        distr = distribution, link = link, ...)
-      results[k, ] <- c(p - 1, q + 1, constant, fit$ic)
+      
+      results[k, ] <- c(p - 1, q + 1, fit$ic)
+      
       if (fit$ic < bestfit$ic) {
         bestfit <- fit
         q <- (q + 1)
@@ -265,12 +273,18 @@ auto.ingarch <- function(y,
     }
     
     # Try increasing p and decreasing q
-    if (q > 0 && p < max.p && newmodel(p + 1, q - 1, constant, results[1:k, ])) {
-      k <- k + 1; if(k>nmodels) next
-      fit <- myingarch(x, order = c(p + 1, q - 1), constant = constant, ic = ic,
+    if (q > 0 && p < max.p && newmodel(p + 1, q - 1, results[1:k, ])) {
+      k <- k + 1;
+      
+      if(k > nmodels)
+        break
+      
+      fit <- myingarch(x, order = c(p + 1, q - 1), ic = ic,
                        trace = trace, xreg = xreg,
                        distr = distribution, link = link, ...)
-      results[k, ] <- c(p + 1, q - 1, constant, fit$ic)
+      
+      results[k, ] <- c(p + 1, q - 1, fit$ic)
+      
       if (fit$ic < bestfit$ic) {
         bestfit <- fit
         q <- (q - 1)
@@ -280,12 +294,18 @@ auto.ingarch <- function(y,
     }
     
     # Try increasing both p and q
-    if (q < max.q && p < max.p && newmodel(p + 1, q + 1, constant, results[1:k, ])) {
-      k <- k + 1; if(k>nmodels) next
-      fit <- myingarch(x, order = c(p + 1, q + 1), constant = constant, ic = ic,
+    if (q < max.q && p < max.p && newmodel(p + 1, q + 1, results[1:k, ])) {
+      k <- k + 1;
+      
+      if(k > nmodels)
+        break
+      
+      fit <- myingarch(x, order = c(p + 1, q + 1), ic = ic,
                        trace = trace, xreg = xreg,
                        distr = distribution, link = link, ...)
-      results[k, ] <- c(p + 1, q + 1, constant, fit$ic)
+      
+      results[k, ] <- c(p + 1, q + 1, fit$ic)
+      
       if (fit$ic < bestfit$ic) {
         bestfit <- fit
         q <- (q + 1)
@@ -293,22 +313,9 @@ auto.ingarch <- function(y,
         next
       }
     }
-    
-    # Try toggling constant at each step if it improves the model
-    if (newmodel(p, q, !constant, results[1:k, ])) {
-      k <- k + 1; if(k>nmodels) next
-      fit <- myingarch(x, order = c(p, q), constant = !constant, ic = ic,
-                       trace = trace, xreg = xreg,
-                       distr = distribution, link = link, ...)
-      results[k, ] <- c(p, q, !constant, fit$ic)
-      if (fit$ic < bestfit$ic) {
-        bestfit <- fit
-        constant <- !constant
-      }
-    }
   }
   
-  if(k > nmodels){
+  if(k >= nmodels){
     warning(sprintf("Stepwise search was stopped early due to reaching the model number limit: `nmodels = %i`", nmodels))
   }
   
@@ -323,8 +330,7 @@ auto.ingarch <- function(y,
   bestfit$x <- orig.x
   bestfit$series <- series
   bestfit$ic <- NULL
-  bestfit$call <- match.call()
-  bestfit$call$x <- data.frame(x = x)
+  bestfit$call <- call("auto.ingarch", y = as.name("ts_data"))
   
   if (trace) {
     cat("\n\n Best model:", ingarch.string(bestfit, padding = TRUE), "\n\n")
