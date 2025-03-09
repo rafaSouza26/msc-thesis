@@ -77,26 +77,48 @@ myingarch <- function(x, order = c(NULL, NULL), ic = "aic", trace = FALSE,
       ...
     )
     
-    # Set class
+    # Set class but maintain the original tsglm class to ensure compatibility
     class(fit) <- c("forecast_tsglm", "tsglm", "tscount")
     
     # Ensure all required elements are present
-    fit$ts <- x
-    fit$model <- model_spec
-    fit$xreg <- xreg
-    fit$distr <- distr
-    fit$link <- link
+    required_names <- c("coefficients", "start", "residuals", "fitted.values", 
+                        "linear.predictors", "response", "logLik", "score", 
+                        "info.matrix", "info.matrix_corrected", "call", "n_obs", 
+                        "n_eff", "ts", "model", "xreg", "distr", "distrcoefs", "sigmasq")
+    
+    # Check which required elements are missing
+    missing_elements <- setdiff(required_names, names(fit))
+    
+    # Add any missing elements
+    if (length(missing_elements) > 0) {
+      for (element in missing_elements) {
+        # Add default values for missing elements
+        fit[[element]] <- switch(element,
+                                 "coefficients" = numeric(0),
+                                 "start" = c(1, frequency(x)),
+                                 "residuals" = x - fit$fitted.values,
+                                 "fitted.values" = if(is.null(fit$fitted.values)) rep(mean(x, na.rm = TRUE), length(x)) else fit$fitted.values,
+                                 "linear.predictors" = if(is.null(fit$linear.predictors)) rep(0, length(x)) else fit$linear.predictors,
+                                 "response" = if(is.null(fit$response)) x else fit$response,
+                                 "logLik" = if(is.null(fit$logLik)) -Inf else fit$logLik,
+                                 "score" = if(is.null(fit$score)) matrix(0, nrow = 1, ncol = 1) else fit$score,
+                                 "info.matrix" = if(is.null(fit$info.matrix)) matrix(0, nrow = 1, ncol = 1) else fit$info.matrix,
+                                 "info.matrix_corrected" = if(is.null(fit$info.matrix_corrected)) matrix(0, nrow = 1, ncol = 1) else fit$info.matrix_corrected,
+                                 "call" = match.call(),
+                                 "n_obs" = length(x),
+                                 "n_eff" = length(x) - max_order,
+                                 "ts" = x,
+                                 "model" = model_spec,
+                                 "xreg" = xreg,
+                                 "distr" = distr,
+                                 "distrcoefs" = if(distr == "nbinom" && is.null(fit$distrcoefs)) list(size = 10) else fit$distrcoefs, # Default size param
+                                 "sigmasq" = if(is.null(fit$sigmasq)) 1 else fit$sigmasq,
+                                 NULL)  # Default case
+      }
+    }
     
     # Store original order values for reference
     fit$orig_order <- c(orig_p, orig_q)
-    
-    # Add required elements that might be missing
-    if (is.null(fit$coefficients))
-      fit$coefficients <- numeric(0)
-    
-    if (is.null(fit$residuals)) {
-      fit$residuals <- x - fit$fitted.values
-    }
     
     # Calculate effective sample size and number of parameters
     nstar <- length(x) - max_order
@@ -153,13 +175,36 @@ myingarch <- function(x, order = c(NULL, NULL), ic = "aic", trace = FALSE,
       cat(" :", Inf)
       cat("\nError: ", conditionMessage(e), "\n")
     }
-    return(list(
+    
+    # Create a minimal object that has ic=Inf but contains all required elements
+    dummy_fit <- list(
       ic = Inf,
       error = conditionMessage(e),
       order = c(orig_p, orig_q),
-      constant = TRUE,  # Always set to TRUE
+      coefficients = numeric(0),
+      start = c(1, frequency(x)),
+      residuals = rep(NA, length(x)),
+      fitted.values = rep(NA, length(x)),
+      linear.predictors = rep(NA, length(x)),
+      response = x,
+      logLik = -Inf,
+      score = matrix(0, nrow = 1, ncol = 1),
+      info.matrix = matrix(0, nrow = 1, ncol = 1),
+      info.matrix_corrected = matrix(0, nrow = 1, ncol = 1),
+      call = match.call(),
+      n_obs = length(x),
+      n_eff = length(x) - max_order,
+      ts = x,
+      model = model_spec,
+      xreg = xreg,
       distr = distr,
-      link = link
-    ))
+      distrcoefs = if(distr == "nbinom") list(size = 10) else NULL,
+      sigmasq = 1
+    )
+    
+    # Set the class to avoid tsglm.check issues when returning from error
+    class(dummy_fit) <- c("forecast_tsglm", "tsglm", "tscount")
+    
+    return(dummy_fit)
   })
 }
