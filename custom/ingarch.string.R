@@ -21,8 +21,7 @@ ingarch.string <- function(object, padding=FALSE) {
   if (!is.null(object$xreg)) {
     result <- paste("Regression with", base_string, "errors")
   } else {
-    # Always include "with non-zero mean" as we always include the intercept
-    result <- paste(base_string, "with non-zero mean")
+    result <- base_string
   }
   
   if (!padding) {
