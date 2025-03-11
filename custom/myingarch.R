@@ -160,7 +160,7 @@ myingarch <- function(x, order = c(NULL, NULL), ic = "aic", trace = FALSE,
     if (trace) {
       # Use the original order values for trace output
       cat("\n INGARCH(", orig_p, ",", orig_q, ")", sep = "")
-      # Removed "with non-zero mean" from here
+      cat(" with non-zero mean")  # Always show "with non-zero mean"
       cat(" (", distr, " distribution, ", link, " link)", sep="")
       cat(" :", fit$ic)
     }
@@ -170,7 +170,7 @@ myingarch <- function(x, order = c(NULL, NULL), ic = "aic", trace = FALSE,
   }, error = function(e) {
     if (trace) {
       cat("\n INGARCH(", orig_p, ",", orig_q, ")", sep = "")
-      # Removed "with non-zero mean" from here
+      cat(" with non-zero mean")  # Always show "with non-zero mean"
       cat(" (", distr, " distribution, ", link, " link)", sep="")
       cat(" :", Inf)
       cat("\nError: ", conditionMessage(e), "\n")
