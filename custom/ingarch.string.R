@@ -18,7 +18,7 @@ ingarch.string <- function(object, padding=FALSE) {
   base_string <- sprintf("INGARCH(%d,%d)", p, q)
   
   # Handle regression components
-  if (!is.null(object$xreg)) {
+  if (!is.null(object$xreg) && ncol(object$xreg) > 0) {
     result <- paste("Regression with", base_string, "errors")
   } else {
     result <- base_string
