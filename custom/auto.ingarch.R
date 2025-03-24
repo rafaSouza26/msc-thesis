@@ -13,7 +13,6 @@ auto.ingarch <- function(y,
                          stepwise = TRUE,     # Whether to use stepwise selection
                          nmodels = 94,        # Maximum number of models to try
                          trace = FALSE,       # Whether to print model search progress
-                         show_warnings = FALSE, # Whether to show warnings at the end
                          method = NULL,       # Estimation method
                          parallel = FALSE,    # Whether to use parallel processing
                          num.cores = 2,       # Number of cores for parallel processing
@@ -127,53 +126,26 @@ auto.ingarch <- function(y,
   p <- start.p <- min(start.p, max.p)
   q <- start.q <- min(start.q, max.q)
   
-  # Initialize results matrix with NA values - will store model configurations, ICs, and warnings
-  results <- matrix(NA, nrow = nmodels, ncol = 4)
-  colnames(results) <- c("p", "q", "ic", "warnings")
+  # Initialize results matrix - only store model configurations and ICs
+  results <- matrix(NA, nrow = nmodels, ncol = 3)
+  colnames(results) <- c("p", "q", "ic")
   
-  # Create a list to store warnings for each model
-  all_warnings <- list()
+  # Initial model with intercept
+  bestfit <- myingarch(x, order = c(p, q), ic = ic, trace = trace, 
+                       xreg = xreg, distr = distribution, link = link, ...)
   
-  # Initial model with intercept - capture warnings
-  w <- NULL
-  withCallingHandlers({
-    bestfit <- suppressWarnings(myingarch(x, order = c(p, q), ic = ic, 
-                                          trace = trace, xreg = xreg, 
-                                          distr = distribution, link = link, ...))
-  }, warning = function(warn) {
-    w <<- c(w, warn$message)
-    invokeRestart("muffleWarning")
-  })
-  
-  # Store warnings in results matrix
-  results[1, ] <- c(p, q, bestfit$ic, ifelse(is.null(w), NA, paste(w, collapse = "; ")))
-  
-  # Store any warnings
-  if(!is.null(w)) {
-    all_warnings[[1]] <- list(p = p, q = q, warnings = w)
-  }
+  # Store results
+  results[1, ] <- c(p, q, bestfit$ic)
   
   k <- 1
   
   # Fit (0,0) model - explicitly passing order=c(0,0)
   k <- k + 1
-  w <- NULL
-  withCallingHandlers({
-    fit <- suppressWarnings(myingarch(x, order = c(0, 0), ic = ic,
-                                      trace = trace, xreg = xreg,
-                                      distr = distribution, link = link, ...))
-  }, warning = function(warn) {
-    w <<- c(w, warn$message)
-    invokeRestart("muffleWarning")
-  })
+  fit <- myingarch(x, order = c(0, 0), ic = ic, trace = trace, 
+                   xreg = xreg, distr = distribution, link = link, ...)
   
-  # Store warnings in results matrix
-  results[k, ] <- c(0, 0, fit$ic, ifelse(is.null(w), NA, paste(w, collapse = "; ")))
-  
-  # Store any warnings
-  if(!is.null(w)) {
-    all_warnings[[length(all_warnings) + 1]] <- list(p = 0, q = 0, warnings = w)
-  }
+  # Store results
+  results[k, ] <- c(0, 0, fit$ic)
   
   if (fit$ic < bestfit$ic) {
     bestfit <- fit
@@ -185,23 +157,11 @@ auto.ingarch <- function(y,
   if (max.p > 0 && (p != 1 || q != 0)) {
     k <- k + 1
     
-    w <- NULL
-    withCallingHandlers({
-      fit <- suppressWarnings(myingarch(x, order = c(1, 0), ic = ic,
-                                        trace = trace, xreg = xreg,
-                                        distr = distribution, link = link, ...))
-    }, warning = function(warn) {
-      w <<- c(w, warn$message)
-      invokeRestart("muffleWarning")
-    })
+    fit <- myingarch(x, order = c(1, 0), ic = ic, trace = trace, 
+                     xreg = xreg, distr = distribution, link = link, ...)
     
-    # Store warnings in results matrix
-    results[k, ] <- c(1, 0, fit$ic, ifelse(is.null(w), NA, paste(w, collapse = "; ")))
-    
-    # Store any warnings
-    if(!is.null(w)) {
-      all_warnings[[length(all_warnings) + 1]] <- list(p = 1, q = 0, warnings = w)
-    }
+    # Store results
+    results[k, ] <- c(1, 0, fit$ic)
     
     if (fit$ic < bestfit$ic) {
       bestfit <- fit
@@ -214,23 +174,11 @@ auto.ingarch <- function(y,
   if (max.q > 0 && (p != 0 || q != 1)) {
     k <- k + 1
     
-    w <- NULL
-    withCallingHandlers({
-      fit <- suppressWarnings(myingarch(x, order = c(0, 1), ic = ic,
-                                        trace = trace, xreg = xreg,
-                                        distr = distribution, link = link, ...))
-    }, warning = function(warn) {
-      w <<- c(w, warn$message)
-      invokeRestart("muffleWarning")
-    })
+    fit <- myingarch(x, order = c(0, 1), ic = ic, trace = trace, 
+                     xreg = xreg, distr = distribution, link = link, ...)
     
-    # Store warnings in results matrix
-    results[k, ] <- c(0, 1, fit$ic, ifelse(is.null(w), NA, paste(w, collapse = "; ")))
-    
-    # Store any warnings
-    if(!is.null(w)) {
-      all_warnings[[length(all_warnings) + 1]] <- list(p = 0, q = 1, warnings = w)
-    }
+    # Store results
+    results[k, ] <- c(0, 1, fit$ic)
     
     if (fit$ic < bestfit$ic) {
       bestfit <- fit
@@ -256,23 +204,11 @@ auto.ingarch <- function(y,
       if(k > nmodels)
         break
       
-      w <- NULL
-      withCallingHandlers({
-        fit <- suppressWarnings(myingarch(x, order = c(p - 1, q), ic = ic,
-                                          trace = trace, xreg = xreg,
-                                          distr = distribution, link = link, ...))
-      }, warning = function(warn) {
-        w <<- c(w, warn$message)
-        invokeRestart("muffleWarning")
-      })
+      fit <- myingarch(x, order = c(p - 1, q), ic = ic, trace = trace, 
+                       xreg = xreg, distr = distribution, link = link, ...)
       
-      # Store warnings in results matrix
-      results[k, ] <- c(p - 1, q, fit$ic, ifelse(is.null(w), NA, paste(w, collapse = "; ")))
-      
-      # Store any warnings
-      if(!is.null(w)) {
-        all_warnings[[length(all_warnings) + 1]] <- list(p = p - 1, q = q, warnings = w)
-      }
+      # Store results
+      results[k, ] <- c(p - 1, q, fit$ic)
       
       if (fit$ic < bestfit$ic) {
         bestfit <- fit
@@ -288,23 +224,11 @@ auto.ingarch <- function(y,
       if(k > nmodels)
         break
       
-      w <- NULL
-      withCallingHandlers({
-        fit <- suppressWarnings(myingarch(x, order = c(p, q + 1), ic = ic,
-                                          trace = trace, xreg = xreg,
-                                          distr = distribution, link = link, ...))
-      }, warning = function(warn) {
-        w <<- c(w, warn$message)
-        invokeRestart("muffleWarning")
-      })
+      fit <- myingarch(x, order = c(p, q + 1), ic = ic, trace = trace, 
+                       xreg = xreg, distr = distribution, link = link, ...)
       
-      # Store warnings in results matrix
-      results[k, ] <- c(p, q + 1, fit$ic, ifelse(is.null(w), NA, paste(w, collapse = "; ")))
-      
-      # Store any warnings
-      if(!is.null(w)) {
-        all_warnings[[length(all_warnings) + 1]] <- list(p = p, q = q + 1, warnings = w)
-      }
+      # Store results
+      results[k, ] <- c(p, q + 1, fit$ic)
       
       if (fit$ic < bestfit$ic) {
         bestfit <- fit
@@ -320,23 +244,11 @@ auto.ingarch <- function(y,
       if(k > nmodels)
         break
       
-      w <- NULL
-      withCallingHandlers({
-        fit <- suppressWarnings(myingarch(x, order = c(p - 1, q - 1), ic = ic,
-                                          trace = trace, xreg = xreg,
-                                          distr = distribution, link = link, ...))
-      }, warning = function(warn) {
-        w <<- c(w, warn$message)
-        invokeRestart("muffleWarning")
-      })
+      fit <- myingarch(x, order = c(p - 1, q - 1), ic = ic, trace = trace, 
+                       xreg = xreg, distr = distribution, link = link, ...)
       
-      # Store warnings in results matrix
-      results[k, ] <- c(p - 1, q - 1, fit$ic, ifelse(is.null(w), NA, paste(w, collapse = "; ")))
-      
-      # Store any warnings
-      if(!is.null(w)) {
-        all_warnings[[length(all_warnings) + 1]] <- list(p = p - 1, q = q - 1, warnings = w)
-      }
+      # Store results
+      results[k, ] <- c(p - 1, q - 1, fit$ic)
       
       if (fit$ic < bestfit$ic) {
         bestfit <- fit
@@ -353,23 +265,11 @@ auto.ingarch <- function(y,
       if(k > nmodels)
         break
       
-      w <- NULL
-      withCallingHandlers({
-        fit <- suppressWarnings(myingarch(x, order = c(p - 1, q + 1), ic = ic,
-                                          trace = trace, xreg = xreg,
-                                          distr = distribution, link = link, ...))
-      }, warning = function(warn) {
-        w <<- c(w, warn$message)
-        invokeRestart("muffleWarning")
-      })
+      fit <- myingarch(x, order = c(p - 1, q + 1), ic = ic, trace = trace, 
+                       xreg = xreg, distr = distribution, link = link, ...)
       
-      # Store warnings in results matrix
-      results[k, ] <- c(p - 1, q + 1, fit$ic, ifelse(is.null(w), NA, paste(w, collapse = "; ")))
-      
-      # Store any warnings
-      if(!is.null(w)) {
-        all_warnings[[length(all_warnings) + 1]] <- list(p = p - 1, q = q + 1, warnings = w)
-      }
+      # Store results
+      results[k, ] <- c(p - 1, q + 1, fit$ic)
       
       if (fit$ic < bestfit$ic) {
         bestfit <- fit
@@ -386,23 +286,11 @@ auto.ingarch <- function(y,
       if(k > nmodels)
         break
       
-      w <- NULL
-      withCallingHandlers({
-        fit <- suppressWarnings(myingarch(x, order = c(p + 1, q - 1), ic = ic,
-                                          trace = trace, xreg = xreg,
-                                          distr = distribution, link = link, ...))
-      }, warning = function(warn) {
-        w <<- c(w, warn$message)
-        invokeRestart("muffleWarning")
-      })
+      fit <- myingarch(x, order = c(p + 1, q - 1), ic = ic, trace = trace, 
+                       xreg = xreg, distr = distribution, link = link, ...)
       
-      # Store warnings in results matrix
-      results[k, ] <- c(p + 1, q - 1, fit$ic, ifelse(is.null(w), NA, paste(w, collapse = "; ")))
-      
-      # Store any warnings
-      if(!is.null(w)) {
-        all_warnings[[length(all_warnings) + 1]] <- list(p = p + 1, q = q - 1, warnings = w)
-      }
+      # Store results
+      results[k, ] <- c(p + 1, q - 1, fit$ic)
       
       if (fit$ic < bestfit$ic) {
         bestfit <- fit
@@ -419,23 +307,11 @@ auto.ingarch <- function(y,
       if(k > nmodels)
         break
       
-      w <- NULL
-      withCallingHandlers({
-        fit <- suppressWarnings(myingarch(x, order = c(p + 1, q + 1), ic = ic,
-                                          trace = trace, xreg = xreg,
-                                          distr = distribution, link = link, ...))
-      }, warning = function(warn) {
-        w <<- c(w, warn$message)
-        invokeRestart("muffleWarning")
-      })
+      fit <- myingarch(x, order = c(p + 1, q + 1), ic = ic, trace = trace, 
+                       xreg = xreg, distr = distribution, link = link, ...)
       
-      # Store warnings in results matrix
-      results[k, ] <- c(p + 1, q + 1, fit$ic, ifelse(is.null(w), NA, paste(w, collapse = "; ")))
-      
-      # Store any warnings
-      if(!is.null(w)) {
-        all_warnings[[length(all_warnings) + 1]] <- list(p = p + 1, q = q + 1, warnings = w)
-      }
+      # Store results
+      results[k, ] <- c(p + 1, q + 1, fit$ic)
       
       if (fit$ic < bestfit$ic) {
         bestfit <- fit
@@ -463,71 +339,11 @@ auto.ingarch <- function(y,
   bestfit$ic <- NULL
   bestfit$call <- call("auto.ingarch", y = as.name("ts_data"))
   
-  # Store model search results and warnings
+  # Store model search results without warnings
   bestfit$results <- results[1:k, , drop = FALSE]
-  bestfit$all_warnings <- all_warnings
-  
-  # Find warnings specific to the best model
-  best_p <- if(is.null(bestfit$model$past_obs)) 0 else length(bestfit$model$past_obs)
-  best_q <- if(is.null(bestfit$model$past_mean)) 0 else length(bestfit$model$past_mean)
-  
-  # Look for warnings matching the best model's p and q values
-  for(i in seq_along(all_warnings)) {
-    if(all_warnings[[i]]$p == best_p && all_warnings[[i]]$q == best_q) {
-      bestfit$warnings <- all_warnings[[i]]$warnings
-      break
-    }
-  }
   
   if (trace) {
     cat("\n\n Best model:", ingarch.string(bestfit, padding = TRUE), "\n\n")
-  }
-  
-  # Display warnings for all models if requested
-  if (show_warnings) {
-    cat("\nWarnings for all models tested:\n")
-    cat("------------------------------\n")
-    
-    # Get non-NA rows
-    valid_results <- results[1:k, , drop = FALSE]
-    valid_results <- valid_results[!is.na(valid_results[,1]), , drop = FALSE]
-    
-    # Order by IC value
-    ordered_idx <- order(valid_results[,3])
-    ordered_results <- valid_results[ordered_idx, , drop = FALSE]
-    
-    for (i in 1:nrow(ordered_results)) {
-      p_val <- ordered_results[i, 1]
-      q_val <- ordered_results[i, 2]
-      ic_val <- ordered_results[i, 3]
-      warnings_val <- ordered_results[i, 4]
-      
-      cat(sprintf("INGARCH(%d,%d) with IC=%.4f\n", p_val, q_val, ic_val))
-      
-      if (!is.na(warnings_val)) {
-        cat("  Warnings:\n")
-        warning_list <- strsplit(warnings_val, "; ")[[1]]
-        for (w in warning_list) {
-          cat("    - ", w, "\n", sep="")
-        }
-      } else {
-        cat("  No warnings\n")
-      }
-      cat("\n")
-    }
-    
-    # Highlight the best model
-    cat(sprintf("Best model: INGARCH(%d,%d) with IC=%.4f\n", 
-                best_p, best_q, bestfit$ic))
-    
-    if (!is.null(bestfit$warnings)) {
-      cat("  Warnings for best model:\n")
-      for (w in bestfit$warnings) {
-        cat("    - ", w, "\n", sep="")
-      }
-    } else {
-      cat("  No warnings for best model\n")
-    }
   }
   
   if (!is.null(bestfit$coefficients)) {
