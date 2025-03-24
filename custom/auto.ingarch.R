@@ -1,5 +1,6 @@
 source("./custom/newmodel.R")
 source("./custom/ingarch.string.R")
+source("./custom/search.ingarch.R")
 
 auto.ingarch <- function(y, 
                          max.p = 5,           # Maximum AR order
@@ -116,6 +117,41 @@ auto.ingarch <- function(y,
   
   if (serieslength <= 3L) {
     ic <- "aic"
+  }
+  
+  if (!stepwise) {
+    # Use brute-force search instead of stepwise
+    bestfit <- search.ingarch(
+      x = x,
+      max.p = max.p, 
+      max.q = max.q,
+      distribution = distribution,  # INGARCH-specific parameter
+      link = link,                 # INGARCH-specific parameter
+      xreg = xreg,
+      ic = ic, 
+      trace = trace,
+      show_warnings = show_warnings, # Added to match warning system
+      parallel = parallel, 
+      num.cores = num.cores, 
+      ...
+    )
+    
+    # Set appropriate properties on bestfit
+    bestfit$x <- orig.x
+    bestfit$series <- series
+    bestfit$ic <- NULL
+    bestfit$call <- match.call()
+    
+    if (trace) {
+      cat("\n\n Best model:", ingarch.string(bestfit, padding = TRUE), "\n\n")
+    }
+    
+    if (!is.null(bestfit$coefficients)) {
+      # Add minimum threshold for parameters to prevent convergence to zero
+      bestfit$coefficients[bestfit$coefficients < 1e-4] <- 1e-4
+    }
+    
+    return(bestfit)
   }
   
   # Starting model
