@@ -1,8 +1,8 @@
 source("./custom/myingarch.R")
 
 search.ingarch <- function(x, 
-                           max.p = 5,           # Maximum AR order
-                           max.q = 5,           # Maximum MA order
+                           max.p = 7,           # Maximum AR order
+                           max.q = 7,           # Maximum MA order
                            distribution = c("poisson", "nbinom"),  # Distribution family
                            link = c("log", "identity"),        # Link function
                            xreg = NULL,         # External covariates

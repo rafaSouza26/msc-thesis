@@ -52,7 +52,8 @@ fitted_model <- try({
     distribution = "nbinom",
     link = "log",
     trace = TRUE,
-    nmodels = 100
+    nmodels = 100,
+    show_warnings = TRUE
   )
 })
 
