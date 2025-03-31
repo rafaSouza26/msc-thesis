@@ -3,8 +3,8 @@ source("./custom/ingarch.string.R")
 source("./custom/search.ingarch.R")
 
 auto.ingarch <- function(y, 
-                         max.p = 5,           # Maximum AR order
-                         max.q = 5,           # Maximum MA order
+                         max.p = 7,           # Maximum AR order
+                         max.q = 7,           # Maximum MA order
                          start.p = 2,         # Starting AR order
                          start.q = 2,         # Starting MA order
                          distribution = c("poisson", "nbinom"),  # Distribution family
