@@ -51,18 +51,18 @@ ingarch.sim <- function(n, param = list(intercept = 1, past_obs = NULL, past_mea
     if (!is.numeric(param$past_obs)) {
       stop("past_obs coefficients must be numeric")
     }
-    if (any(param$past_obs < 0)) {
-      stop("past_obs coefficients must be non-negative")
-    }
+    #if (any(param$past_obs < 0)) {
+    #  stop("past_obs coefficients must be non-negative")
+    #}
   }
   
   if (!is.null(param$past_mean)) {
     if (!is.numeric(param$past_mean)) {
       stop("past_mean coefficients must be numeric")
     }
-    if (any(param$past_mean < 0)) {
-      stop("past_mean coefficients must be non-negative")
-    }
+    # if (any(param$past_mean < 0)) {
+    #  stop("past_mean coefficients must be non-negative")
+    #}
   }
   
   # Validate distribution parameters
