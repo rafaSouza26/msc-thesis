@@ -350,11 +350,11 @@ def plot_times(df_gs, df_sw, time_col, output_dir):
 
 # --- Generate Plots ---
 # Updated calls to use known p/q and added heatmap plot call
-plot_order_hit_percentage(df_gs, df_sw, KNOWN_P_TRUE, KNOWN_Q_TRUE, P_ESTIMATED_COL, Q_ESTIMATED_COL, OUTPUT_DIR)
-plot_order_selection_heatmap(df_gs, df_sw, P_ESTIMATED_COL, Q_ESTIMATED_COL, OUTPUT_DIR) # Now generates 2a, 2b
-plot_order_differences(df_gs, df_sw, KNOWN_P_TRUE, KNOWN_Q_TRUE, P_ESTIMATED_COL, Q_ESTIMATED_COL, OUTPUT_DIR) # Now generates 3a, 3b
-plot_aic_difference(df_gs, df_sw, AIC_COL, OUTPUT_DIR)
-plot_bic_difference(df_gs, df_sw, BIC_COL, OUTPUT_DIR)
+# plot_order_hit_percentage(df_gs, df_sw, KNOWN_P_TRUE, KNOWN_Q_TRUE, P_ESTIMATED_COL, Q_ESTIMATED_COL, OUTPUT_DIR)
+# plot_order_selection_heatmap(df_gs, df_sw, P_ESTIMATED_COL, Q_ESTIMATED_COL, OUTPUT_DIR) # Now generates 2a, 2b
+# plot_order_differences(df_gs, df_sw, KNOWN_P_TRUE, KNOWN_Q_TRUE, P_ESTIMATED_COL, Q_ESTIMATED_COL, OUTPUT_DIR) # Now generates 3a, 3b
+# plot_aic_difference(df_gs, df_sw, AIC_COL, OUTPUT_DIR)
+# plot_bic_difference(df_gs, df_sw, BIC_COL, OUTPUT_DIR)
 plot_times(df_gs, df_sw, TIME_COL, OUTPUT_DIR)
 
 print(f"\nAll plots generated and saved in the '{OUTPUT_DIR}' directory.")
