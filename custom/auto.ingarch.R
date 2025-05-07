@@ -170,9 +170,14 @@ auto.ingarch <- function(y,
   results <- matrix(NA, nrow = nmodels, ncol = 3)
   colnames(results) <- c("p", "q", "ic")
   
+  # Initialize model counter - ADD THIS LINE
+  model_count <- 0
+  
   # Initial model with intercept - capture warnings
   warnings_captured <- character(0)
   bestfit <- withCallingHandlers({
+    model_count <<- model_count + 1  # INCREMENT COUNTER
+    if(trace) cat("Evaluating model", model_count, ": INGARCH(", p, ",", q, ")\n", sep="")
     myingarch(x, order = c(p, q), ic = ic, 
               trace = trace, xreg = xreg, 
               distr = distribution, link = link, ...)
@@ -191,6 +196,8 @@ auto.ingarch <- function(y,
   k <- k + 1
   warnings_captured <- character(0)
   fit <- withCallingHandlers({
+    model_count <<- model_count + 1  # INCREMENT COUNTER
+    if(trace) cat("Evaluating model", model_count, ": INGARCH(", p, ",", q, ")\n", sep="")
     myingarch(x, order = c(0, 0), ic = ic,
               trace = trace, xreg = xreg,
               distr = distribution, link = link, ...)
@@ -215,6 +222,8 @@ auto.ingarch <- function(y,
     
     warnings_captured <- character(0)
     fit <- withCallingHandlers({
+      model_count <<- model_count + 1  # INCREMENT COUNTER
+      if(trace) cat("Evaluating model", model_count, ": INGARCH(", p, ",", q, ")\n", sep="")
       myingarch(x, order = c(1, 0), ic = ic,
                 trace = trace, xreg = xreg,
                 distr = distribution, link = link, ...)
@@ -240,6 +249,8 @@ auto.ingarch <- function(y,
     
     warnings_captured <- character(0)
     fit <- withCallingHandlers({
+      model_count <<- model_count + 1  # INCREMENT COUNTER
+      if(trace) cat("Evaluating model", model_count, ": INGARCH(", p, ",", q, ")\n", sep="")
       myingarch(x, order = c(0, 1), ic = ic,
                 trace = trace, xreg = xreg,
                 distr = distribution, link = link, ...)
@@ -278,6 +289,8 @@ auto.ingarch <- function(y,
       
       warnings_captured <- character(0)
       fit <- withCallingHandlers({
+        model_count <<- model_count + 1  # INCREMENT COUNTER
+        if(trace) cat("Evaluating model", model_count, ": INGARCH(", p, ",", q, ")\n", sep="")
         myingarch(x, order = c(p - 1, q), ic = ic,
                   trace = trace, xreg = xreg,
                   distr = distribution, link = link, ...)
@@ -306,6 +319,8 @@ auto.ingarch <- function(y,
       
       warnings_captured <- character(0)
       fit <- withCallingHandlers({
+        model_count <<- model_count + 1  # INCREMENT COUNTER
+        if(trace) cat("Evaluating model", model_count, ": INGARCH(", p, ",", q, ")\n", sep="")
         myingarch(x, order = c(p, q + 1), ic = ic,
                   trace = trace, xreg = xreg,
                   distr = distribution, link = link, ...)
@@ -334,6 +349,8 @@ auto.ingarch <- function(y,
       
       warnings_captured <- character(0)
       fit <- withCallingHandlers({
+        model_count <<- model_count + 1  # INCREMENT COUNTER
+        if(trace) cat("Evaluating model", model_count, ": INGARCH(", p, ",", q, ")\n", sep="")
         myingarch(x, order = c(p - 1, q - 1), ic = ic,
                   trace = trace, xreg = xreg,
                   distr = distribution, link = link, ...)
@@ -363,6 +380,8 @@ auto.ingarch <- function(y,
       
       warnings_captured <- character(0)
       fit <- withCallingHandlers({
+        model_count <<- model_count + 1  # INCREMENT COUNTER
+        if(trace) cat("Evaluating model", model_count, ": INGARCH(", p, ",", q, ")\n", sep="")
         myingarch(x, order = c(p - 1, q + 1), ic = ic,
                   trace = trace, xreg = xreg,
                   distr = distribution, link = link, ...)
@@ -392,6 +411,8 @@ auto.ingarch <- function(y,
       
       warnings_captured <- character(0)
       fit <- withCallingHandlers({
+        model_count <<- model_count + 1  # INCREMENT COUNTER
+        if(trace) cat("Evaluating model", model_count, ": INGARCH(", p, ",", q, ")\n", sep="")
         myingarch(x, order = c(p + 1, q - 1), ic = ic,
                   trace = trace, xreg = xreg,
                   distr = distribution, link = link, ...)
@@ -421,6 +442,8 @@ auto.ingarch <- function(y,
       
       warnings_captured <- character(0)
       fit <- withCallingHandlers({
+        model_count <<- model_count + 1  # INCREMENT COUNTER
+        if(trace) cat("Evaluating model", model_count, ": INGARCH(", p, ",", q, ")\n", sep="")
         myingarch(x, order = c(p + 1, q + 1), ic = ic,
                   trace = trace, xreg = xreg,
                   distr = distribution, link = link, ...)
@@ -468,8 +491,12 @@ auto.ingarch <- function(y,
   best_q <- if(is.null(bestfit$model$past_mean)) 0 else length(bestfit$model$past_mean)
   bestfit$best_model_warnings <- model_warnings[[paste0("p", best_p, "_q", best_q)]]
   
+  # Add total models evaluated count
+  bestfit$n_total_models <- model_count
+  
   if (trace) {
     cat("\n\n Best model:", ingarch.string(bestfit, padding = TRUE), "\n\n")
+    cat("Total models evaluated:", model_count, "\n")
   }
   
   # Display warnings for all models if requested
