@@ -138,7 +138,7 @@ def create_heatmap(data_matrix, row_sums, col_sums, total_for_percentage, calcul
 
 
 # %% Processing Function (MODIFIED TO GENERATE PLOT VARIANTS AND HANDLE SAVE PATH)
-def process_and_plot(filepath, case_label, output_dir="ingarch_plots"):
+def process_and_plot(filepath, case_label, output_dir="ingarch_heatmaps"):
     """
     Loads data, processes each method, generates heatmaps with variations for zero-count cells,
     and saves them to a specified directory with descriptive names.
@@ -305,11 +305,11 @@ def process_and_plot(filepath, case_label, output_dir="ingarch_plots"):
 # IMPORTANT: Replace these placeholder paths with the actual paths to your files!
 
 # --- Define your file paths here ---
-path_to_file_with_covariates = r'C:\Users\Rafael\Desktop\msc-thesis\results\ingarch_with_covariates_order_freq.csv'
-path_to_file_no_covariates   = r'C:\Users\Rafael\Desktop\msc-thesis\results\ingarch_no_covariates_order_freq.csv'
+path_to_file_with_covariates = r'C:\Users\Rafael\Desktop\msc-thesis\results\simulatedDataResults\ingarch_with_covariates_order_freq.csv'
+path_to_file_no_covariates   = r'C:\Users\Rafael\Desktop\msc-thesis\results\simulatedDataResults\ingarch_no_covariates_order_freq.csv'
 
 # --- Define Output Directory ---
-plot_output_directory = "ingarch_plots_variants" # Define the folder name here (changed to distinguish)
+plot_output_directory = "ingarch_order_heatmaps" # Define the folder name here (changed to distinguish)
 
 # --- Run the processing and plotting ---
 # Pass the output directory name to the function
