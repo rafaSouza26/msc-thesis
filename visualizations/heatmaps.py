@@ -275,7 +275,7 @@ def process_and_plot(filepath, case_label, output_dir="ingarch_heatmaps"):
             # Loop through zero marker options to create plot variants
             for zero_variant_name, actual_zero_color in zero_marker_options.items():
                 # --- Construct Plot Title and Save Path for the Variant ---
-                plot_title_variant = f"{base_plot_title} ({zero_variant_name.replace('_', ' ')})" # e.g., "Stepwise (white zeros)"
+                plot_title_variant = f"{base_plot_title}" # e.g., "Stepwise (white zeros)"
                 filename = f"{filename_method_part}_{case_suffix_for_filename}_{zero_variant_name}.png"
                 save_path = os.path.join(output_dir, filename)
 
