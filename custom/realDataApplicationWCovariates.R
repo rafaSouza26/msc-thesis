@@ -1,5 +1,6 @@
 # --- Apply auto.ingarch to District Data with Covariates by Index (Sequential) ---
-# Version: 2025-05-07 (Simplified with index-based covariates)
+# Version: 2025-05-07 (Simplified with index-based covariates) # User's version
+# Modified on: 2025-05-08 (Prioritize n_total_models, Save all tested models)
 
 # Record script start time
 script_start_time <- Sys.time()
@@ -7,7 +8,7 @@ script_start_time <- Sys.time()
 # --- 1. Load required packages ---
 library(tscount)
 library(dplyr)
-library(readxl)
+library(readxl) # Note: readxl is loaded but main data uses .RData
 
 # --- 2. Source custom functions ---
 cat("Sourcing custom functions...\n")
@@ -22,7 +23,7 @@ MAX_P <- 7
 MAX_Q <- 7
 DISTRIBUTION <- "nbinom"
 LINK <- "log"
-IC <- "aicc"
+IC <- "aicc" # Information Criterion used for model selection
 STEPWISE <- TRUE  # Always use stepwise approach
 
 DATA_PATH <- "./data/count_covariates_data.RData"
@@ -36,8 +37,13 @@ OUTPUT_DIR <- "./district_fitting_output_simplified"
 if (!dir.exists(OUTPUT_DIR)) {
   dir.create(OUTPUT_DIR, recursive = TRUE)
 }
+# Files for BEST model summaries
 RESULTS_RDS_FILE <- file.path(OUTPUT_DIR, "district_fitting_results_simplified.rds")
 RESULTS_CSV_FILE <- file.path(OUTPUT_DIR, "district_fitting_summary_simplified.csv")
+# NEW Files for ALL TESTED models
+ALL_TESTED_MODELS_RDS_FILE <- file.path(OUTPUT_DIR, "all_district_tested_models_details.rds")
+ALL_TESTED_MODELS_CSV_FILE <- file.path(OUTPUT_DIR, "all_district_tested_models_details.csv")
+
 
 # --- Configuration for Districts to Process ---
 # Can easily adjust how many districts to process
@@ -113,18 +119,20 @@ if (!all_struct_ok) {
 # --- 6. Sequential Model Fitting ---
 cat("Starting sequential model fitting for", length(DISTRICT_CODES_TO_PROCESS), "districts...\n")
 
-# Initialize results list
+# Initialize results list for BEST models
 results_list <- list()
+# NEW: Initialize list for ALL tested models
+all_tested_models_list <- list()
 
 # Sequential loop over each district
 for (i in DISTRICT_CODES_TO_PROCESS) {
   cat("\nProcessing District", i, "(", district_lookup[as.character(i)], ")...\n")
   
-  # Initialize result for this district
+  # Initialize result for this district's BEST model
   iter_result <- list(
     district_code = i, p = NA_integer_, q = NA_integer_,
-    aic = NA_real_, bic = NA_real_, aicc = NA_real_,
-    time_secs = NA_real_, n_models_stepwise = 0,  # Initialize to 0 instead of NA
+    aic = NA_real_, bic = NA_real_, aicc = NA_real_, # Note: aicc here is for the best model
+    time_secs = NA_real_, n_models_stepwise = 0,
     betas_str = NA_character_, alphas_str = NA_character_,
     covariates_used_names = NA_character_,
     status = "Not Run"
@@ -134,7 +142,6 @@ for (i in DISTRICT_CODES_TO_PROCESS) {
   xreg <- NULL
   cov_names_for_this_district <- character(0)
   
-  # Get the current district's data
   current_data <- tryCatch({
     df <- get(df_name, envir = .GlobalEnv)
     if (!is.data.frame(df)) stop("Object is not a data frame.")
@@ -148,26 +155,22 @@ for (i in DISTRICT_CODES_TO_PROCESS) {
     if (ncol(current_data) < MIN_EXPECTED_COLUMNS) {
       iter_result$status <- "Insufficient columns in data"
     } else {
-      # Extract response variable (count)
       y <- current_data[, COUNT_VAR_INDEX]
       
-      # Extract covariates using indices
       if(max(COVARIATE_INDICES) <= ncol(current_data)) {
         xreg <- as.matrix(current_data[, COVARIATE_INDICES])
         cov_names_for_this_district <- colnames(current_data)[COVARIATE_INDICES]
         iter_result$covariates_used_names <- paste(cov_names_for_this_district, collapse=", ")
       } else {
         iter_result$status <- "Covariate indices out of bounds for this dataframe."
-        xreg <- NULL # Cannot form xreg
+        xreg <- NULL 
       }
       
-      # Check for NA values
       if (anyNA(y)) {
         iter_result$status <- "NA values in response (y)"
       } else if (!is.null(xreg) && anyNA(xreg)) {
         iter_result$status <- "NA values in covariates (xreg)"
       } else if (iter_result$status == "Not Run") {
-        # Fit the model
         fit_status <- "Fit Failed"
         start_time_fit <- Sys.time()
         
@@ -195,59 +198,65 @@ for (i in DISTRICT_CODES_TO_PROCESS) {
         iter_result$time_secs <- time_fit
         iter_result$status <- fit_status
         
-        # Extract results from the model if successful
         if (fit_status == "Success" && !is.null(fit_model) && inherits(fit_model, "tsglm")) {
-          # Extract p and q
           iter_result$p <- if (is.null(fit_model$model$past_obs)) 0 else length(fit_model$model$past_obs)
           iter_result$q <- if (is.null(fit_model$model$past_mean)) 0 else length(fit_model$model$past_mean)
           
-          # Extract information criteria
           iter_result$aic <- tryCatch(stats::AIC(fit_model), error = function(e) NA_real_)
           iter_result$bic <- tryCatch(stats::BIC(fit_model), error = function(e) NA_real_)
           
-          if (!is.null(fit_model[[IC]])) {
-            iter_result$aicc <- fit_model[[IC]]
+          if (!is.null(fit_model[[IC]])) { # IC value for the BEST model
+            iter_result[[IC]] <- fit_model[[IC]] # Store it in the correctly named column (e.g. iter_result$aicc)
           } else if (!is.null(fit_model$results) && IC %in% names(fit_model$results)) {
-            best_model_row <- which.min(fit_model$results[[IC]])
-            if(length(best_model_row) == 1) iter_result$aicc <- fit_model$results[[IC]][best_model_row]
+            # This path for IC of best model might be redundant if auto.ingarch returns IC directly
+            best_model_row <- which.min(fit_model$results[[IC]]) 
+            if(length(best_model_row) == 1) iter_result[[IC]] <- fit_model$results[[IC]][best_model_row]
           }
           
-          # Count number of models evaluated
-          if(!is.null(fit_model$results) && inherits(fit_model$results, "data.frame")) {
-            iter_result$n_models_stepwise <- nrow(fit_model$results)
-          } else if(!is.null(fit_model$n_total_models)) {
-            # Backup method to get number of models evaluated
+          # Count number of models evaluated (prioritizing n_total_models)
+          if (!is.null(fit_model$n_total_models)) {
             iter_result$n_models_stepwise <- fit_model$n_total_models
+          } else if (!is.null(fit_model$results) && (is.matrix(fit_model$results) || is.data.frame(fit_model$results))) {
+            iter_result$n_models_stepwise <- nrow(as.data.frame(fit_model$results))
           } else {
-            # Set a default value instead of NA
-            iter_result$n_models_stepwise <- 1
+            iter_result$n_models_stepwise <- 1 
           }
           
-          # Extract beta and alpha coefficients
-          all_coeffs <- stats::coef(fit_model)
+          # --- NEW: Store ALL models tested for this district ---
+          if (!is.null(fit_model$results) && (is.matrix(fit_model$results) || is.data.frame(fit_model$results))) {
+            if (nrow(as.data.frame(fit_model$results)) > 0) { # Check if there are any tested models logged
+              district_tested_models_df <- as.data.frame(fit_model$results)
+              # Rename columns: auto.ingarch $results has "p", "q", "ic"
+              # The 'ic' column contains values of the criterion defined by the 'IC' variable (e.g., "aicc")
+              colnames(district_tested_models_df) <- c("tested_p", "tested_q", paste0(IC, "_value"))
+              
+              district_tested_models_df$district_code <- i
+              district_tested_models_df$district_name <- district_lookup[as.character(i)]
+              
+              # Reorder for clarity
+              district_tested_models_df <- district_tested_models_df[, c("district_code", "district_name", 
+                                                                         "tested_p", "tested_q", 
+                                                                         paste0(IC, "_value"))]
+              all_tested_models_list[[length(all_tested_models_list) + 1]] <- district_tested_models_df
+            }
+          }
+          # --- END NEW SECTION for ALL tested models ---
           
-          # Beta coefficients (past observations)
+          all_coeffs <- stats::coef(fit_model)
           if (iter_result$p > 0) {
             beta_coef_names <- paste0("beta_", 1:iter_result$p)
             actual_beta_coeffs <- all_coeffs[names(all_coeffs) %in% beta_coef_names]
-            iter_result$betas_str <- if (length(actual_beta_coeffs) > 0) 
-              paste(round(actual_beta_coeffs, 5), collapse=",") else ""
-          } else { 
-            iter_result$betas_str <- "" 
-          }
+            iter_result$betas_str <- if (length(actual_beta_coeffs) > 0) paste(round(actual_beta_coeffs, 5), collapse=",") else ""
+          } else { iter_result$betas_str <- "" }
           
-          # Alpha coefficients (past means)
           if (iter_result$q > 0) {
             alpha_coef_names <- paste0("alpha_", 1:iter_result$q)
             actual_alpha_coeffs <- all_coeffs[names(all_coeffs) %in% alpha_coef_names]
-            iter_result$alphas_str <- if (length(actual_alpha_coeffs) > 0) 
-              paste(round(actual_alpha_coeffs, 5), collapse=",") else ""
-          } else { 
-            iter_result$alphas_str <- "" 
-          }
+            iter_result$alphas_str <- if (length(actual_alpha_coeffs) > 0) paste(round(actual_alpha_coeffs, 5), collapse=",") else ""
+          } else { iter_result$alphas_str <- "" }
           
-          cat("  Model fitted successfully: p=", iter_result$p, ", q=", iter_result$q, 
-              ", AICc=", round(iter_result$aicc, 2), 
+          cat("  Model fitted successfully: p=", iter_result$p, ", q=", iter_result$q,  
+              ", ", IC, "=", round(iter_result[[IC]], 2), # Use the IC variable for printing
               ", Models evaluated=", iter_result$n_models_stepwise, "\n", sep="")
         } else {
           cat("  Model fitting failed with status:", fit_status, "\n")
@@ -256,74 +265,127 @@ for (i in DISTRICT_CODES_TO_PROCESS) {
     }
   }
   
-  # Add this district's results to the overall list
-  results_list[[length(results_list) + 1]] <- iter_result
+  results_list[[length(results_list) + 1]] <- iter_result # For BEST model
   cat("Completed District", i, "with status:", iter_result$status, "\n")
 }
 
-# --- 7. Process and Combine Results ---
-cat("\nProcessing results...\n")
-
+# --- 7. Process and Combine Results (BEST Models) ---
+cat("\nProcessing results for BEST models...\n")
+# (This section remains largely the same, processing 'results_list' for best models)
 if (length(results_list) > 0) {
-  # Convert list of results to data frame
   results_df <- bind_rows(lapply(results_list, function(res) {
-    # Ensure n_models_stepwise is numeric before binding
     if ("n_models_stepwise" %in% names(res) && is.na(res$n_models_stepwise)) {
       res$n_models_stepwise <- 0
     }
     as.data.frame(res, stringsAsFactors = FALSE)
   }))
   
-  # Add district names
   results_df <- results_df %>%
     mutate(district_name = ifelse(!is.na(district_code), district_lookup[as.character(district_code)], NA_character_)) %>%
-    select(district_code, district_name, p, q, aic, bic, aicc, time_secs,
+    select(district_code, district_name, p, q, aic, bic, aicc, time_secs, # Ensure 'aicc' or general IC column is here
            n_models_stepwise, betas_str, alphas_str, covariates_used_names, status)
 } else {
-  # Create empty structure if no results
   results_df <- data.frame(
     district_code = integer(0), district_name = character(0), p = integer(0), q = integer(0),
-    aic = numeric(0), bic = numeric(0), aicc = numeric(0),
+    aic = numeric(0), bic = numeric(0), aicc = numeric(0), # Ensure 'aicc' or general IC column
     time_secs = numeric(0), n_models_stepwise = integer(0),
     betas_str = character(0), alphas_str = character(0),
     covariates_used_names = character(0), status = character(0),
-    stringsAsFactors = FALSE  # Ensure strings don't get converted to factors
+    stringsAsFactors = FALSE
   )
-  cat("No results to process or save.\n")
+  cat("No BEST model results to process or save.\n")
 }
 
-# --- 8. Save Results ---
+# --- 7.1. Process and Combine ALL Tested Model Results --- (NEW SECTION)
+cat("\nProcessing ALL tested model results...\n")
+all_tested_models_df <- data.frame() 
+
+if (length(all_tested_models_list) > 0) {
+  all_tested_models_df <- bind_rows(all_tested_models_list)
+  cat(nrow(all_tested_models_df), "total models documented as tested across all processed districts.\n")
+} else {
+  cat("No detailed tested model results to process or save.\n")
+  # Create empty dataframe with expected structure for consistency
+  empty_df_cols <- list(
+    district_code = integer(0),
+    district_name = character(0),
+    tested_p = integer(0),
+    tested_q = integer(0)
+  )
+  ic_col_name <- paste0(IC, "_value") # IC is defined in Section 3 (e.g., "aicc")
+  empty_df_cols[[ic_col_name]] <- numeric(0)
+  all_tested_models_df <- as.data.frame(empty_df_cols, stringsAsFactors = FALSE)
+}
+
+# --- 8. Save Results (BEST Models) ---
+# (This section remains largely the same, saving 'results_df')
 if(nrow(results_df) > 0) {
-  cat("Saving results to:", OUTPUT_DIR, "\n")
-  tryCatch({ 
+  cat("Saving BEST model results to:", OUTPUT_DIR, "\n")
+  tryCatch({  
     saveRDS(results_df, file = RESULTS_RDS_FILE)
-    cat("Detailed results saved to:", RESULTS_RDS_FILE, "\n")
-  }, error = function(e) { cat("ERROR saving RDS file:", conditionMessage(e), "\n") })
+    cat("Detailed BEST model results saved to:", RESULTS_RDS_FILE, "\n")
+  }, error = function(e) { cat("ERROR saving BEST models RDS file:", conditionMessage(e), "\n") })
   
-  tryCatch({ 
-    # Ensure n_models_stepwise is numeric before writing to CSV
+  tryCatch({  
     results_df$n_models_stepwise <- as.numeric(results_df$n_models_stepwise)
-    # Replace NA with 0 for n_models_stepwise
     results_df$n_models_stepwise[is.na(results_df$n_models_stepwise)] <- 0
     
     write.csv(results_df, file = RESULTS_CSV_FILE, row.names = FALSE, na = "")
-    cat("Summary results saved to:", RESULTS_CSV_FILE, "\n")
-  }, error = function(e) { cat("ERROR saving CSV file:", conditionMessage(e), "\n") })
+    cat("Summary BEST model results saved to:", RESULTS_CSV_FILE, "\n")
+  }, error = function(e) { cat("ERROR saving BEST models CSV file:", conditionMessage(e), "\n") })
 }
 
-# --- 9. Display Summary ---
-cat("\n===== Fitting Summary (Simplified, Index-based Covariates) =====\n")
+# --- 8.1. Save ALL Tested Model Results --- (NEW SECTION)
+if(nrow(all_tested_models_df) > 0) {
+  cat("Saving ALL tested model details to:", OUTPUT_DIR, "\n")
+  tryCatch({  
+    saveRDS(all_tested_models_df, file = ALL_TESTED_MODELS_RDS_FILE)
+    cat("All tested model details saved to:", ALL_TESTED_MODELS_RDS_FILE, "\n")
+  }, error = function(e) { cat("ERROR saving all tested models RDS file:", conditionMessage(e), "\n") })
+  
+  tryCatch({  
+    write.csv(all_tested_models_df, file = ALL_TESTED_MODELS_CSV_FILE, row.names = FALSE, na = "")
+    cat("All tested model details saved to:", ALL_TESTED_MODELS_CSV_FILE, "\n")
+  }, error = function(e) { cat("ERROR saving all tested models CSV file:", conditionMessage(e), "\n") })
+} else if (length(all_tested_models_list) == 0) { # Only print if list was empty
+  cat("No data for all tested models to save.\n")
+}
+
+
+# --- 9. Display Summary (BEST Models) ---
+cat("\n===== Fitting Summary (BEST Models - Simplified, Index-based Covariates) =====\n")
+# (This section remains largely the same, displaying 'results_df')
 if(nrow(results_df) > 0) {
-  print(as.data.frame(results_df[, c("district_code", "district_name", "p", "q", "aicc",
-                                     "time_secs", "betas_str", "alphas_str", "covariates_used_names", "status")]),
+  # Ensure the IC column used (e.g. aicc) is part of the display
+  cols_to_display <- c("district_code", "district_name", "p", "q", IC, 
+                       "time_secs", "n_models_stepwise", 
+                       "betas_str", "alphas_str", "covariates_used_names", "status")
+  # Make sure IC column actually exists in results_df
+  if (!IC %in% colnames(results_df) && "aicc" %in% colnames(results_df) && IC == "aicc") {
+    # Default to aicc if IC specific col not found but aicc is there and IC is aicc
+  } else if (!IC %in% colnames(results_df)) {
+    warning(paste("Specified IC column '", IC, "' not found in results_df for display. Defaulting to 'aicc' if available or skipping."))
+    if ("aicc" %in% colnames(results_df)) {
+      cols_to_display <- unique(c("district_code", "district_name", "p", "q", "aicc", 
+                                  "time_secs", "n_models_stepwise", 
+                                  "betas_str", "alphas_str", "covariates_used_names", "status"))
+    } else {
+      cols_to_display <- unique(c("district_code", "district_name", "p", "q",
+                                  "time_secs", "n_models_stepwise",
+                                  "betas_str", "alphas_str", "covariates_used_names", "status"))
+    }
+  }
+  
+  print(as.data.frame(results_df[,intersect(cols_to_display, colnames(results_df))]),
         row.names = FALSE, max = nrow(results_df) + 5)
 } else {
-  cat("No results to display.\n")
+  cat("No BEST model results to display.\n")
 }
 
-cat("\n===== Status Summary =====\n")
+cat("\n===== Status Summary (BEST Models) =====\n")
+# (This section remains largely the same, summarizing 'results_df$status')
 if(nrow(results_df) > 0) {
-  results_df$status <- as.character(results_df$status) # Ensure character for grouping
+  results_df$status <- as.character(results_df$status) 
   status_summary <- results_df %>%
     group_by(status) %>%
     summarise(count = n(), .groups = 'drop') %>%

@@ -1,0 +1,142 @@
+{
+  "start_p0_q0": {
+    "run_id": "start_p0_q0",
+    "start_params": {
+      "p": 0,
+      "q": 0
+    },
+    "final_model_orders": {
+      "p": 1,
+      "q": 4
+    },
+    "final_model_ic_type": "aic",
+    "final_model_ic_value": 5988.5741,
+    "final_model_coefficients": [0.1571, 0.6511, 0.335, 0.0001, 0.0001, 0.2294]
+  },
+  "start_p1_q0": {
+    "run_id": "start_p1_q0",
+    "start_params": {
+      "p": 1,
+      "q": 0
+    },
+    "final_model_orders": {
+      "p": 1,
+      "q": 4
+    },
+    "final_model_ic_type": "aic",
+    "final_model_ic_value": 5988.5741,
+    "final_model_coefficients": [0.1571, 0.6511, 0.335, 0.0001, 0.0001, 0.2294]
+  },
+  "start_p0_q1": {
+    "run_id": "start_p0_q1",
+    "start_params": {
+      "p": 0,
+      "q": 1
+    },
+    "final_model_orders": {
+      "p": 1,
+      "q": 4
+    },
+    "final_model_ic_type": "aic",
+    "final_model_ic_value": 5988.5741,
+    "final_model_coefficients": [0.1571, 0.6511, 0.335, 0.0001, 0.0001, 0.2294]
+  },
+  "start_p1_q1": {
+    "run_id": "start_p1_q1",
+    "start_params": {
+      "p": 1,
+      "q": 1
+    },
+    "final_model_orders": {
+      "p": 1,
+      "q": 4
+    },
+    "final_model_ic_type": "aic",
+    "final_model_ic_value": 5988.5741,
+    "final_model_coefficients": [0.1571, 0.6511, 0.335, 0.0001, 0.0001, 0.2294]
+  },
+  "start_p2_q1": {
+    "run_id": "start_p2_q1",
+    "start_params": {
+      "p": 2,
+      "q": 1
+    },
+    "final_model_orders": {
+      "p": 2,
+      "q": 0
+    },
+    "final_model_ic_type": "aic",
+    "final_model_ic_value": 6042.1411,
+    "final_model_coefficients": [0.3121, 0.6651, 0.1939]
+  },
+  "start_p1_q2": {
+    "run_id": "start_p1_q2",
+    "start_params": {
+      "p": 1,
+      "q": 2
+    },
+    "final_model_orders": {
+      "p": 1,
+      "q": 4
+    },
+    "final_model_ic_type": "aic",
+    "final_model_ic_value": 5988.5741,
+    "final_model_coefficients": [0.1571, 0.6511, 0.335, 0.0001, 0.0001, 0.2294]
+  },
+  "start_p2_q2": {
+    "run_id": "start_p2_q2",
+    "start_params": {
+      "p": 2,
+      "q": 2
+    },
+    "final_model_orders": {
+      "p": 1,
+      "q": 4
+    },
+    "final_model_ic_type": "aic",
+    "final_model_ic_value": 5988.5741,
+    "final_model_coefficients": [0.1571, 0.6511, 0.335, 0.0001, 0.0001, 0.2294]
+  },
+  "start_p3_q0": {
+    "run_id": "start_p3_q0",
+    "start_params": {
+      "p": 3,
+      "q": 0
+    },
+    "final_model_orders": {
+      "p": 2,
+      "q": 0
+    },
+    "final_model_ic_type": "aic",
+    "final_model_ic_value": 6042.1411,
+    "final_model_coefficients": [0.3121, 0.6651, 0.1939]
+  },
+  "start_p0_q3": {
+    "run_id": "start_p0_q3",
+    "start_params": {
+      "p": 0,
+      "q": 3
+    },
+    "final_model_orders": {
+      "p": 1,
+      "q": 4
+    },
+    "final_model_ic_type": "aic",
+    "final_model_ic_value": 5988.5741,
+    "final_model_coefficients": [0.1571, 0.6511, 0.335, 0.0001, 0.0001, 0.2294]
+  },
+  "start_p3_q3": {
+    "run_id": "start_p3_q3",
+    "start_params": {
+      "p": 3,
+      "q": 3
+    },
+    "final_model_orders": {
+      "p": 1,
+      "q": 4
+    },
+    "final_model_ic_type": "aic",
+    "final_model_ic_value": 5988.5741,
+    "final_model_coefficients": [0.1571, 0.6511, 0.335, 0.0001, 0.0001, 0.2294]
+  }
+}
