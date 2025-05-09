@@ -1,0 +1,110 @@
+[
+  {
+    "run_id": "1",
+    "original_simulation_index": 1,
+    "parameters_used": {
+      "ic": "aic",
+      "distribution": "nbinom",
+      "link": "log",
+      "max_p_setting": 5,
+      "max_q_setting": 5,
+      "start_p_function_default": 2,
+      "start_q_function_default": 2
+    },
+    "final_model_orders": {
+      "p": 1,
+      "q": 4
+    },
+    "final_model_ic_value": 5732.6271,
+    "final_model_coefficients": {
+      "(Intercept)": 0.1571,
+      "beta_1": 0.6511,
+      "alpha_1": 0.335,
+      "alpha_2": 0.0001,
+      "alpha_3": 0.0001,
+      "alpha_4": 0.2294
+    },
+    "error_message": {}
+  },
+  {
+    "run_id": "2",
+    "original_simulation_index": 1,
+    "parameters_used": {
+      "ic": "aic",
+      "distribution": "nbinom",
+      "link": "log",
+      "max_p_setting": 7,
+      "max_q_setting": 7,
+      "start_p_function_default": 2,
+      "start_q_function_default": 2
+    },
+    "final_model_orders": {
+      "p": 1,
+      "q": 4
+    },
+    "final_model_ic_value": 5732.6271,
+    "final_model_coefficients": {
+      "(Intercept)": 0.1571,
+      "beta_1": 0.6511,
+      "alpha_1": 0.335,
+      "alpha_2": 0.0001,
+      "alpha_3": 0.0001,
+      "alpha_4": 0.2294
+    },
+    "error_message": {}
+  },
+  {
+    "run_id": "3",
+    "original_simulation_index": 1,
+    "parameters_used": {
+      "ic": "aic",
+      "distribution": "nbinom",
+      "link": "log",
+      "max_p_setting": 7,
+      "max_q_setting": 4,
+      "start_p_function_default": 2,
+      "start_q_function_default": 2
+    },
+    "final_model_orders": {
+      "p": 1,
+      "q": 4
+    },
+    "final_model_ic_value": 5732.6271,
+    "final_model_coefficients": {
+      "(Intercept)": 0.1571,
+      "beta_1": 0.6511,
+      "alpha_1": 0.335,
+      "alpha_2": 0.0001,
+      "alpha_3": 0.0001,
+      "alpha_4": 0.2294
+    },
+    "error_message": {}
+  },
+  {
+    "run_id": "4",
+    "original_simulation_index": 1,
+    "parameters_used": {
+      "ic": "aic",
+      "distribution": "nbinom",
+      "link": "log",
+      "max_p_setting": 4,
+      "max_q_setting": 7,
+      "start_p_function_default": 2,
+      "start_q_function_default": 2
+    },
+    "final_model_orders": {
+      "p": 1,
+      "q": 4
+    },
+    "final_model_ic_value": 5732.6271,
+    "final_model_coefficients": {
+      "(Intercept)": 0.1571,
+      "beta_1": 0.6511,
+      "alpha_1": 0.335,
+      "alpha_2": 0.0001,
+      "alpha_3": 0.0001,
+      "alpha_4": 0.2294
+    },
+    "error_message": {}
+  }
+]
