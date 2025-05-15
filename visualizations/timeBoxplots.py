@@ -143,9 +143,37 @@ def create_time_boxplots(filepath,
              if len(ordered_display_names) == len(df['display_method'].unique()): # Ensure all present methods are in the map
                  plot_order = ordered_display_names
 
-
-        sns.boxplot(x='display_method', y='time', data=df,
+        # Create the box plot
+        ax = sns.boxplot(x='display_method', y='time', data=df,
                     palette=active_palette, order=plot_order, width=0.5) # Using display_method for x-axis
+        
+        # Calculate means for each method and add red dots for them
+        if plot_order:
+            # If a specific order was defined and used
+            for i, method in enumerate(plot_order):
+                mean_time = df[df['display_method'] == method]['time'].mean()
+                ax.plot(i, mean_time, 'ro', ms=8)  # Add red dot at mean
+                
+                # Add text label at bottom left of each box plot
+                # Get the y-min for this group's data
+                min_y = df[df['display_method'] == method]['time'].min()
+                # Position text at the bottom left of the box
+                ax.text(i - 0.4, min_y - (df['time'].max() - df['time'].min()) * 0.08,
+                        f'Mean: {mean_time:.2f}', 
+                        ha='left', va='top', fontsize=9, color='red')
+        else:
+            # If using default order
+            for i, method in enumerate(df['display_method'].unique()):
+                mean_time = df[df['display_method'] == method]['time'].mean()
+                ax.plot(i, mean_time, 'ro', ms=8)  # Add red dot at mean
+                
+                # Add text label at bottom left of each box plot
+                # Get the y-min for this group's data
+                min_y = df[df['display_method'] == method]['time'].min()
+                # Position text at the bottom left of the box
+                ax.text(i - 0.4, min_y - (df['time'].max() - df['time'].min()) * 0.08,
+                        f'Mean: {mean_time:.2f}', 
+                        ha='left', va='top', fontsize=9, color='red')
         
         plt.title(f'Comparison of Execution Times\n{case_label}', fontsize=14)
         plt.xlabel('Search Method', fontsize=12)

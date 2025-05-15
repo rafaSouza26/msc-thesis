@@ -142,6 +142,31 @@ auto.ingarch <- function(y,
     bestfit$ic <- NULL
     bestfit$call <- match.call()
     
+    if (!is.null(bestfit$results) && is.list(bestfit$results)) {
+      temp_results_df <- do.call(rbind, lapply(bestfit$results, function(item) {
+        # Ensure item is a list and has the required components
+        if(is.list(item) && all(c("p", "q", "ic") %in% names(item))) {
+          data.frame(p = item$p, q = item$q, ic = item$ic)
+        } else {
+          # Return a data frame with NAs if structure is unexpected, to avoid errors with rbind
+          data.frame(p = NA, q = NA, ic = NA)
+        }
+      }))
+      # Remove rows that might have become all NAs due to unexpected item structure
+      if (nrow(temp_results_df) > 0) {
+        temp_results_df <- temp_results_df[rowSums(is.na(temp_results_df)) < ncol(temp_results_df), , drop = FALSE]
+      }
+      if (nrow(temp_results_df) > 0) {
+        bestfit$results <- as.matrix(temp_results_df)
+      } else {
+        # If all results were invalid, create an empty matrix with correct columns
+        bestfit$results <- matrix(numeric(0), ncol = 3, dimnames = list(NULL, c("p", "q", "ic")))
+      }
+    } else {
+      # If bestfit$results was not a list or was NULL, ensure it's an empty matrix with correct columns
+      bestfit$results <- matrix(numeric(0), ncol = 3, dimnames = list(NULL, c("p", "q", "ic")))
+    }
+    
     if (trace) {
       cat("\n\n Best model:", ingarch.string(bestfit, padding = TRUE), "\n\n")
     }
