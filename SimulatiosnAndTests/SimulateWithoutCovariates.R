@@ -3,9 +3,9 @@
 
 # Load required packages
 library(tscount)
-library(ggplot2) 
 library(dplyr)   
 library(readxl)  
+# library(ggplot2) # Only if plotting is added later
 
 # Source custom functions
 # Ensure these paths are correct relative to your script's location
@@ -41,15 +41,17 @@ extract_model_params <- function(data_path, model_row = 1) {
 run_simulation_study_no_covariates <- function() {
   set.seed(12345) 
   
-  cat("Extracting model parameters from Excel file...\n")
+  num_simulations <- 1000 # Number of datasets to simulate
+  sim_length <- 1000     # Length of each time series
+  progress_print_frequency <- max(1, floor(num_simulations / 10)) # Print progress roughly 10 times + start/end
+  
+  cat("Starting INGARCH simulation study (without covariates).\n")
+  cat("Configuration: num_simulations =", num_simulations, ", sim_length =", sim_length, "\n")
+  
+  cat("Step 1: Extracting model parameters from Excel file...\n")
   params <- extract_model_params("./data/modelosAveiro.xlsx", model_row = 1) # Ensure this path is correct
-  cat("Model parameters for simulation:\n")
-  cat("True p =", params$p, "\n") 
-  cat("True q =", params$q, "\n")
-  cat("True sigmasq (alpha for nbinom) =", params$sigmasq, "\n")
-  cat("True intercept =", params$intercept, "\n")
-  if(params$p > 0 && length(params$betas) >= params$p) cat("True beta coefficients:", params$betas[1:params$p], "\n")
-  if(params$q > 0 && length(params$alphas) >= params$q) cat("True alpha coefficients:", params$alphas[1:params$q], "\n")
+  # Minimal print of true parameters for verification
+  cat("  True p_order=", params$p, ", True q_order=", params$q, ", True sigmasq=", params$sigmasq, "\n")
   
   ingarch_params <- list(
     intercept = params$intercept,
@@ -66,24 +68,24 @@ run_simulation_study_no_covariates <- function() {
     NA
   }
   if(is.na(size_param)) stop("size_param for nbinom is NA. Halting simulation.")
-  cat("Calculated 'size' parameter for nbinom simulation (1/sigmasq):", size_param, "\n")
+  cat("  Calculated 'size' parameter for nbinom simulation (1/sigmasq):", size_param, "\n")
   
-  num_simulations <- 5 # Using 1 from your traceback, for faster testing. Increase for full study.
-  sim_length <- 100    # Using 10 from your traceback, for faster testing. Increase for full study.
-  cat(paste("Simulating", num_simulations, "INGARCH realizations of length", sim_length, "without covariates...\n"))
+  cat(paste("\nStep 2: Simulating", num_simulations, "INGARCH realizations of length", sim_length, "...\n"))
   sims <- vector("list", num_simulations)
   for(i in 1:num_simulations) {
-    if(i %% 1 == 0 || num_simulations <= 10) cat("Generating simulation", i, "of", num_simulations, "\n")
+    if(i == 1 || i == num_simulations || (i %% progress_print_frequency == 0 && num_simulations > 10)) {
+      cat("  Generating simulation", i, "of", num_simulations, "...\n")
+    }
     sim_result <- ingarch.sim(n = sim_length, param = ingarch_params, model = ingarch_model, link = "log", distr = "nbinom", size = size_param, n_start = 100)
     if (!is.null(sim_result) && is.list(sim_result) && "ts" %in% names(sim_result)) {
       sims[[i]] <- as.numeric(sim_result$ts)
     } else {
-      stop(paste("Cannot extract numeric time series from ingarch.sim output in simulation", i, "- expected a list with a '$ts' component."))
+      stop(paste("Cannot extract numeric time series from ingarch.sim output in simulation", i))
     }
   }
   cat("Finished generating simulations.\n")
   
-  cat("Running model selection sequentially for INGARCH without covariates...\n")
+  cat("\nStep 3: Running model selection sequentially...\n")
   
   results_list_stepwise <- vector("list", num_simulations)
   results_list_grid <- vector("list", num_simulations)
@@ -91,47 +93,31 @@ run_simulation_study_no_covariates <- function() {
   task_max.p <- 7 
   task_max.q <- 7 
   task_max.order_stepwise <- 5 
-  task_max.order_grid <- 5    
+  task_max.order_grid <- 14    
   task_distribution <- "nbinom"
   task_link <- "log"
   
   define_results_template <- function(max_p_cols, max_q_cols) {
     na_betas_list <- list(); if(max_p_cols > 0) { na_betas_list <- as.list(rep(NA_real_, max_p_cols)); names(na_betas_list) <- paste0("beta", 1:max_p_cols) }
     na_alphas_list <- list(); if(max_q_cols > 0) { na_alphas_list <- as.list(rep(NA_real_, max_q_cols)); names(na_alphas_list) <- paste0("alpha", 1:max_q_cols) }
-    
-    template <- c(
-      list(p_order = NA_integer_, q_order = NA_integer_, 
-           time = NA_real_, n_models_tested = NA_integer_, 
-           aic = NA_real_, bic = NA_real_,
-           intercept = NA_real_, sigmasq = NA_real_),
-      na_betas_list, 
-      na_alphas_list, 
-      list(error_message = "") 
-    )
-    template$p_order <- NA_integer_ # Ensure types after c()
-    template$q_order <- NA_integer_
-    template$time <- NA_real_
-    template$n_models_tested <- NA_integer_
-    template$aic <- NA_real_
-    template$bic <- NA_real_
-    template$intercept <- NA_real_
-    template$sigmasq <- NA_real_
-    template$error_message <- "" 
-    if(max_p_cols > 0) for(k_template in 1:max_p_cols) template[[paste0("beta",k_template)]] <- NA_real_
-    if(max_q_cols > 0) for(k_template in 1:max_q_cols) template[[paste0("alpha",k_template)]] <- NA_real_
+    template <- c(list(p_order=NA_integer_, q_order=NA_integer_, time=NA_real_, n_models_tested=NA_integer_, aic=NA_real_, bic=NA_real_, intercept=NA_real_, sigmasq=NA_real_), na_betas_list, na_alphas_list, list(error_message=""))
+    template[sapply(template, is.null)] <- NA # Ensure NULLs become NAs
+    # Explicitly type NAs
+    for (name in c("p_order", "q_order", "n_models_tested")) template[[name]] <- NA_integer_
+    for (name in c("time", "aic", "bic", "intercept", "sigmasq")) template[[name]] <- NA_real_
+    if(max_p_cols > 0) for(k in 1:max_p_cols) template[[paste0("beta",k)]] <- NA_real_
+    if(max_q_cols > 0) for(k in 1:max_q_cols) template[[paste0("alpha",k)]] <- NA_real_
+    template$error_message <- ""
     return(template)
   }
   results_template <- define_results_template(task_max.p, task_max.q)
   target_column_names <- c("method", "sim_id", names(results_template))
   
   populate_results_from_fit <- function(fit_object, template_data, 
-                                        max_p_for_columns, max_q_for_columns, # These are task_max.p/q for template size
-                                        sim_idx_for_debug = NA, method_for_debug = NA) {
-    populated_data <- template_data # Start with a fresh copy of the results_template
-    
+                                        max_p_cols_in_template, max_q_cols_in_template) { # Removed unused debug args
+    populated_data <- template_data 
     if (!is.null(fit_object) && is.null(fit_object$error)) {
       populated_data$error_message <- "" 
-      
       model_summary_obj <- tryCatch(summary(fit_object), error = function(e) NULL)
       coeffs_vector <- NULL
       if (!is.null(model_summary_obj) && !is.null(model_summary_obj$coefficients) && 
@@ -142,24 +128,7 @@ run_simulation_study_no_covariates <- function() {
         coeffs_vector <- tryCatch(stats::coef(fit_object), error = function(e) NULL)
       }
       
-      # --- DIAGNOSTIC PRINT (prints once for the first successful fit encountered) ---
-      if (!is.na(sim_idx_for_debug) && !exists(".coef_names_printed_flag_v4", envir = .GlobalEnv)) {
-        if (!is.null(coeffs_vector) && length(coeffs_vector) > 0) {
-          cat(paste0("\n[DIAGNOSTIC PRINT populate_results_from_fit] Method: ", method_for_debug, ", Sim_ID: ", sim_idx_for_debug, "\n"))
-          cat("  Actual coefficient names found in fitted model object:\n")
-          print(names(coeffs_vector))
-          cat("  Corresponding values:\n")
-          print(coeffs_vector)
-          cat("  >>> IMPORTANT: Script is looking for names like '(Intercept)', 'beta_K', 'alpha_K', 'past_obsK', 'past_meanK'. Adjust if needed.\n")
-        } else {
-          cat(paste0("\n[DIAGNOSTIC PRINT populate_results_from_fit] Method: ", method_for_debug, ", Sim_ID: ", sim_idx_for_debug, " - No coefficients retrieved.\n"))
-        }
-        assign(".coef_names_printed_flag_v4", TRUE, envir = .GlobalEnv) 
-      }
-      # --- END DIAGNOSTIC PRINT ---
-      
-      current_p_order <- 0L
-      current_q_order <- 0L
+      current_p_order <- 0L; current_q_order <- 0L
       if (!is.null(fit_object$model)) {
         current_p_order <- if(is.null(fit_object$model$past_obs) || length(fit_object$model$past_obs)==0) 0L else as.integer(max(fit_object$model$past_obs))[1]
         current_q_order <- if(is.null(fit_object$model$past_mean) || length(fit_object$model$past_mean)==0) 0L else as.integer(max(fit_object$model$past_mean))[1]
@@ -172,21 +141,15 @@ run_simulation_study_no_covariates <- function() {
       populated_data$bic <- as.numeric(tryCatch(stats::BIC(fit_object), error = function(e) NA_real_))[1]
       
       if (!is.null(coeffs_vector)) {
-        # Intercept
         if ("(Intercept)" %in% names(coeffs_vector)) { populated_data$intercept <- as.numeric(coeffs_vector["(Intercept)"])[1]
         } else if ("intercept" %in% names(coeffs_vector)) { populated_data$intercept <- as.numeric(coeffs_vector["intercept"])[1] }
         
-        # Betas (past_obs coefficients)
-        if (max_p_for_columns > 0 && current_p_order > 0) {
-          for (k_beta in 1:current_p_order) { # Iterate up to the actual fitted p_order
-            if (k_beta > max_p_for_columns) break 
-            target_col_name_in_csv <- paste0("beta", k_beta) # e.g. "beta1"
-            
-            # ** Coefficient names to search for in the model object **
-            # Based on diagnostic print, "beta_K" is a primary candidate.
+        if (max_p_cols_in_template > 0 && current_p_order > 0) {
+          for (k_beta in 1:current_p_order) { 
+            if (k_beta > max_p_cols_in_template) break 
+            target_col_name_in_csv <- paste0("beta", k_beta)
             name_from_model_beta_underscore <- paste0("beta_", k_beta) 
             name_from_model_past_obs <- paste0("past_obs", k_beta)
-            
             if (name_from_model_beta_underscore %in% names(coeffs_vector)) {
               populated_data[[target_col_name_in_csv]] <- as.numeric(coeffs_vector[name_from_model_beta_underscore])[1]
             } else if (name_from_model_past_obs %in% names(coeffs_vector)) {
@@ -194,15 +157,12 @@ run_simulation_study_no_covariates <- function() {
             } 
           }
         }
-        # Alphas (past_mean coefficients)
-        if (max_q_for_columns > 0 && current_q_order > 0) {
+        if (max_q_cols_in_template > 0 && current_q_order > 0) {
           for (k_alpha in 1:current_q_order) { 
-            if (k_alpha > max_q_for_columns) break
+            if (k_alpha > max_q_cols_in_template) break
             target_col_name_in_csv <- paste0("alpha", k_alpha)
-            
             name_from_model_alpha_underscore <- paste0("alpha_", k_alpha)
             name_from_model_past_mean <- paste0("past_mean", k_alpha)
-            
             if (name_from_model_alpha_underscore %in% names(coeffs_vector)) {
               populated_data[[target_col_name_in_csv]] <- as.numeric(coeffs_vector[name_from_model_alpha_underscore])[1]
             } else if (name_from_model_past_mean %in% names(coeffs_vector)) {
@@ -211,47 +171,76 @@ run_simulation_study_no_covariates <- function() {
           }
         }
       }
-      
-      # Sigmasq (overdispersion for nbinom)
       if (!is.null(fit_object$distr) && fit_object$distr == "nbinom" && !is.null(fit_object$sigmasq)) {
         populated_data$sigmasq <- as.numeric(fit_object$sigmasq)[1]
       } else if (!is.null(coeffs_vector)) { 
         if ("sigmasq" %in% names(coeffs_vector)) { populated_data$sigmasq <- as.numeric(coeffs_vector["sigmasq"])[1] 
-        } else if ("alpha" %in% names(coeffs_vector)) { # Common name for overdispersion
-          populated_data$sigmasq <- as.numeric(coeffs_vector["alpha"])[1] 
-        } else if ("dispersion" %in% names(coeffs_vector)) { # Another possible name
-          populated_data$sigmasq <- as.numeric(coeffs_vector["dispersion"])[1]
-        }
+        } else if ("alpha" %in% names(coeffs_vector)) { populated_data$sigmasq <- as.numeric(coeffs_vector["alpha"])[1] 
+        } else if ("dispersion" %in% names(coeffs_vector)) { populated_data$sigmasq <- as.numeric(coeffs_vector["dispersion"])[1] }
       }
     } else { 
       populated_data$error_message <- if(!is.null(fit_object$message)) as.character(fit_object$message)[1] else "Fit object error or NULL"
     }
-    
-    # Final check: ensure all elements of populated_data are scalar, otherwise NA of template type
     for(name_iter in names(results_template)){ 
-      val_to_check <- populated_data[[name_iter]]
-      if(is.null(val_to_check) || length(val_to_check) != 1) { 
+      current_val <- populated_data[[name_iter]]
+      if(length(current_val) != 1 || is.null(current_val)) { 
         original_template_val <- results_template[[name_iter]] 
         if(identical(class(original_template_val), "integer")) populated_data[[name_iter]] <- NA_integer_
         else if(identical(class(original_template_val), "numeric")) populated_data[[name_iter]] <- NA_real_
-        else if(identical(class(original_template_value), "character")) { # Typo fix: original_template_val
+        else if(identical(class(original_template_val), "character")) {
           populated_data[[name_iter]] <- if(name_iter == "error_message") "" else NA_character_
         }
         else populated_data[[name_iter]] <- NA 
       }
       if(name_iter == "error_message" && is.na(populated_data[[name_iter]])) {
-        populated_data[[name_iter]] <- "" # Ensure error_message is "" if NA
+        populated_data[[name_iter]] <- "" 
       }
     }
     return(populated_data)
   }
   
+  # Definition of convert_to_df_with_bind_rows (moved earlier)
+  convert_to_df_with_bind_rows <- function(list_of_result_lists_input, method_name_str) {
+    list_of_1row_dfs <- lapply(1:length(list_of_result_lists_input), function(j) {
+      current_row_data_list <- list_of_result_lists_input[[j]] 
+      
+      final_df_row_list <- vector("list", length(target_column_names)) 
+      names(final_df_row_list) <- target_column_names
+      
+      final_df_row_list[["method"]] <- method_name_str
+      final_df_row_list[["sim_id"]] <- as.integer(j)
+      
+      for(col_name_template in names(results_template)){ 
+        if(col_name_template %in% names(current_row_data_list)){
+          final_df_row_list[[col_name_template]] <- current_row_data_list[[col_name_template]]
+        } else {
+          final_df_row_list[[col_name_template]] <- results_template[[col_name_template]] 
+          if(col_name_template == "error_message" && (is.na(final_df_row_list[[col_name_template]]))) { # Ensure empty string for error if NA
+            final_df_row_list[[col_name_template]] <- "" 
+          }
+        }
+      }
+      return(as.data.frame(final_df_row_list, stringsAsFactors = FALSE))
+    })
+    
+    list_of_1row_dfs_filtered <- list_of_1row_dfs[!sapply(list_of_1row_dfs, is.null)] # Should not have NULLs if template is always used
+    
+    if (length(list_of_1row_dfs_filtered) > 0) {
+      return(dplyr::bind_rows(list_of_1row_dfs_filtered))
+    } else {
+      empty_df <- data.frame(matrix(ncol = length(target_column_names), nrow = 0))
+      tryCatch(colnames(empty_df) <- target_column_names, error = function(e){})
+      return(empty_df)
+    }
+  } # End of convert_to_df_with_bind_rows definition
+  
   # Sequential loop for simulations
   for(i in 1:num_simulations) {
-    if(i %% 1 == 0 || num_simulations <= 10 ) cat("Processing simulation", i, "of", num_simulations, "\n")
+    if(i == 1 || i == num_simulations || (i %% progress_print_frequency == 0 && num_simulations > 10)) {
+      cat("  Processing simulation", i, "of", num_simulations, "...\n")
+    }
     sim_data_ts <- sims[[i]]
     
-    # Get fresh templates for each fit result
     current_stepwise_template <- results_template 
     stepwise_time_taken <- system.time({
       stepwise_fit_object <- tryCatch({
@@ -260,10 +249,9 @@ run_simulation_study_no_covariates <- function() {
                      stepwise = TRUE, trace = FALSE, show_warnings = FALSE, parallel = FALSE)
       }, error = function(e) list(error = TRUE, message = conditionMessage(e)))
     })["elapsed"]
-    current_stepwise_template$time <- as.numeric(stepwise_time_taken) # Add time before passing to populate
+    current_stepwise_template$time <- as.numeric(stepwise_time_taken)
     results_list_stepwise[[i]] <- populate_results_from_fit(stepwise_fit_object, current_stepwise_template, 
-                                                            task_max.p, task_max.q, 
-                                                            sim_idx_for_debug = i, method_for_debug = "stepwise")
+                                                            task_max.p, task_max.q) # Removed debug args
     
     current_grid_template <- results_template 
     grid_time_taken <- system.time({
@@ -273,63 +261,28 @@ run_simulation_study_no_covariates <- function() {
                      stepwise = FALSE, trace = FALSE, show_warnings = FALSE, parallel = FALSE)
       }, error = function(e) list(error = TRUE, message = conditionMessage(e)))
     })["elapsed"]
-    current_grid_template$time <- as.numeric(grid_time_taken) # Add time before passing to populate
+    current_grid_template$time <- as.numeric(grid_time_taken)
     results_list_grid[[i]] <- populate_results_from_fit(grid_fit_object, current_grid_template, 
-                                                        task_max.p, task_max.q, 
-                                                        sim_idx_for_debug = i, method_for_debug = "grid_search")
+                                                        task_max.p, task_max.q) # Removed debug args
   }
   cat("Finished model selection processing.\n")
   
-  cat("Summarizing results for INGARCH without covariates...\n")
-  
-  convert_to_df_with_bind_rows <- function(list_of_result_lists_input, method_name_str) {
-    list_of_1row_dfs <- lapply(1:length(list_of_result_lists_input), function(j) {
-      current_row_data_list <- list_of_result_lists_input[[j]] 
-      
-      final_df_row_list <- vector("list", length(target_column_names)) # target_column_names from outer scope
-      names(final_df_row_list) <- target_column_names
-      
-      final_df_row_list[["method"]] <- method_name_str
-      final_df_row_list[["sim_id"]] <- as.integer(j)
-      
-      for(col_name_template in names(results_template)){ # Iterate over defined data fields
-        if(col_name_template %in% names(current_row_data_list)){
-          final_df_row_list[[col_name_template]] <- current_row_data_list[[col_name_template]]
-        } else {
-          final_df_row_list[[col_name_template]] <- results_template[[col_name_template]] # Fallback to NA from template
-          if(col_name_template == "error_message" && (is.na(final_df_row_list[[col_name_template]]))) {
-            final_df_row_list[[col_name_template]] <- "Data structure error" 
-          }
-        }
-      }
-      return(as.data.frame(final_df_row_list, stringsAsFactors = FALSE))
-    })
-    
-    # Filter out any NULL data frames that might have been produced (should be rare now)
-    list_of_1row_dfs_filtered <- list_of_1row_dfs[!sapply(list_of_1row_dfs, is.null)]
-    
-    if (length(list_of_1row_dfs_filtered) > 0) {
-      return(dplyr::bind_rows(list_of_1row_dfs_filtered))
-    } else {
-      empty_df <- data.frame(matrix(ncol = length(target_column_names), nrow = 0))
-      tryCatch(colnames(empty_df) <- target_column_names, error = function(e){})
-      return(empty_df)
-    }
-  }
+  cat("\nStep 4: Summarizing and saving results...\n")
   
   stepwise_results_df <- convert_to_df_with_bind_rows(results_list_stepwise, "stepwise")
   grid_results_df     <- convert_to_df_with_bind_rows(results_list_grid, "grid_search")
   
   results_df <- dplyr::bind_rows(stepwise_results_df, grid_results_df)
   
-  cat("Saving detailed results to CSV file...\n")
   if (nrow(results_df) > 0) {
     write.csv(results_df, "ingarch_no_covariates_results.csv", row.names = FALSE)
+    cat("  Detailed results saved to: ingarch_no_covariates_results.csv\n")
   } else {
-    cat("No results to save to CSV.\n")
+    cat("  No results to save to CSV.\n")
   }
   
   saveRDS(sims, "ingarch_no_covariates_simulations.rds")
+  cat("  Simulated datasets saved to: ingarch_no_covariates_simulations.rds\n")
   
   if (nrow(results_df) > 0) {
     summary_stats <- results_df %>%
@@ -355,32 +308,41 @@ run_simulation_study_no_covariates <- function() {
     
     write.csv(summary_stats, "ingarch_no_covariates_summary_stats.csv", row.names = FALSE)
     write.csv(order_freq, "ingarch_no_covariates_order_frequencies.csv", row.names = FALSE)
+    cat("  Summary statistics and order frequencies saved to CSV files.\n")
     
     cat("\n===== Summary Statistics =====\n"); print(summary_stats)
     cat("\n===== Most Frequent (p_order,q_order) Orders (Top 5 per method) =====\n")
     top_orders <- order_freq %>% group_by(method) %>% slice_head(n = 5)
     print(top_orders)
   } else {
-    cat("No results available to summarize.\n")
+    cat("  No results available to summarize.\n")
   }
-  
-  cat("\nResults primarily saved to: ingarch_no_covariates_results.csv\n")
-  cat("Other .rds and summary .csv files also saved in your working directory.\n")
   
   return(results_df)
 }
 
 # Main function to run the study
 main <- function() {
-  cat("Starting INGARCH simulation study (without covariates)...\n")
-  overall_start_time <- Sys.time()
-  if(exists(".coef_names_printed_flag_v4", envir = .GlobalEnv)){ # Ensure flag name matches
+  # Clear the global flag for diagnostic print before starting, if it was used
+  if(exists(".coef_names_printed_flag_v4", envir = .GlobalEnv)){
     rm(".coef_names_printed_flag_v4", envir = .GlobalEnv)
   }
-  results_data_frame <- run_simulation_study_no_covariates()
+  
+  overall_start_time <- Sys.time()
+  results_data_frame <- tryCatch(run_simulation_study_no_covariates(),
+                                 error = function(e) {
+                                   cat("\nERROR during simulation study run:\n")
+                                   print(e)
+                                   return(NULL)
+                                 })
   overall_end_time <- Sys.time()
   overall_duration <- overall_end_time - overall_start_time
-  cat("Simulation study completed!\n")
+  
+  if(!is.null(results_data_frame)){
+    cat("\nSimulation study completed!\n")
+  } else {
+    cat("\nSimulation study encountered an error and did not complete successfully.\n")
+  }
   cat("Total duration of the study:", format(overall_duration), "\n")
 }
 
