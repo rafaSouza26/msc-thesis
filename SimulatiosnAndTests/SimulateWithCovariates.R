@@ -68,7 +68,7 @@ define_results_template_with_cov <- function(max_p_cols, max_q_cols, xreg_col_na
 populate_results_from_fit_with_cov <- function(fit_object, template_data, 
                                                max_p_cols_in_template, max_q_cols_in_template,
                                                xreg_col_names_in_template) { # xreg_col_names_in_template are the original (potentially non-valid R) names
-  populated_data <- template_data 
+  populated_data <- template_data # Start with the template (which has NAs)
   
   if (!is.null(fit_object) && is.null(fit_object$error) && inherits(fit_object, "tsglm")) {
     populated_data$status <- "Success" 
@@ -99,12 +99,14 @@ populate_results_from_fit_with_cov <- function(fit_object, template_data,
     populated_data$bic <- as.numeric(tryCatch(stats::BIC(fit_object), error = function(e) NA_real_))[1]
     
     if (!is.null(coeffs_vector)) {
+      # Intercept
       if ("(Intercept)" %in% names(coeffs_vector)) { 
         populated_data$intercept <- as.numeric(coeffs_vector["(Intercept)"])[1]
       } else if ("intercept" %in% names(coeffs_vector)) { 
         populated_data$intercept <- as.numeric(coeffs_vector["intercept"])[1] 
-      }
+      } # If not found, it remains NA from template
       
+      # Betas (past_obs)
       if (max_p_cols_in_template > 0 && current_p_order > 0) {
         for (k_beta in 1:current_p_order) { 
           if (k_beta > max_p_cols_in_template) break 
@@ -115,9 +117,11 @@ populate_results_from_fit_with_cov <- function(fit_object, template_data,
             populated_data[[target_col_name_in_csv]] <- as.numeric(coeffs_vector[name_from_model_beta_underscore])[1]
           } else if (name_from_model_past_obs %in% names(coeffs_vector)) {
             populated_data[[target_col_name_in_csv]] <- as.numeric(coeffs_vector[name_from_model_past_obs])[1]
-          } 
+          } # If not found, it remains NA from template
         }
-      }
+      } # If current_p_order is 0, all betaX fields remain NA from template
+      
+      # Alphas (past_mean)
       if (max_q_cols_in_template > 0 && current_q_order > 0) {
         for (k_alpha in 1:current_q_order) { 
           if (k_alpha > max_q_cols_in_template) break
@@ -128,33 +132,26 @@ populate_results_from_fit_with_cov <- function(fit_object, template_data,
             populated_data[[target_col_name_in_csv]] <- as.numeric(coeffs_vector[name_from_model_alpha_underscore])[1]
           } else if (name_from_model_past_mean %in% names(coeffs_vector)) {
             populated_data[[target_col_name_in_csv]] <- as.numeric(coeffs_vector[name_from_model_past_mean])[1]
-          }
+          } # If not found, it remains NA from template
         }
-      }
+      } # If current_q_order is 0, all alphaX fields remain NA from template
+      
       # External Regressor Coefficients
-      # xreg_col_names_in_template are the original names (e.g., "mean.Temp.Lag5")
-      # We need to map them to valid R names used in the template (e.g., "mean.Temp.Lag5" -> "mean.Temp.Lag5")
-      # And then map the coefficient names from the model (which should match original xreg names)
       if (length(xreg_col_names_in_template) > 0 && !is.null(fit_object$xreg)) {
-        original_xreg_names_from_model <- colnames(fit_object$xreg) # Names as they were in the xreg matrix fed to the model
-        
+        original_xreg_names_from_model <- colnames(fit_object$xreg) 
         for (idx_xreg in 1:length(xreg_col_names_in_template)) {
-          original_coef_name <- xreg_col_names_in_template[idx_xreg] # e.g. "mean.Temp.Lag5"
-          valid_template_col_name <- make.names(original_coef_name, unique = TRUE) # e.g. "mean.Temp.Lag5"
-          
-          # The coefficient in coeffs_vector should be named based on original_coef_name
+          original_coef_name <- xreg_col_names_in_template[idx_xreg] 
+          valid_template_col_name <- make.names(original_coef_name, unique = TRUE)
           if (original_coef_name %in% names(coeffs_vector)) {
             if(valid_template_col_name %in% names(populated_data)){ 
               populated_data[[valid_template_col_name]] <- as.numeric(coeffs_vector[original_coef_name])[1]
-            } else {
-              # This case should ideally not happen if template is generated correctly
-              warning(paste("Template column name", valid_template_col_name, "not found for xreg coefficient", original_coef_name))
             }
-          }
+          } # If not found, it remains NA from template
         }
       }
-    }
+    } # End of if (!is.null(coeffs_vector))
     
+    # Sigmasq (dispersion for nbinom)
     if (!is.null(fit_object$distr) && fit_object$distr == "nbinom") {
       if(!is.null(fit_object$sigmasq)) { 
         populated_data$sigmasq <- as.numeric(fit_object$sigmasq)[1]
@@ -163,26 +160,28 @@ populate_results_from_fit_with_cov <- function(fit_object, template_data,
       } else if (!is.null(model_summary_obj) && !is.null(model_summary_obj$dispersion) && "estimate" %in% names(model_summary_obj$dispersion)){
         alpha_disp <- as.numeric(model_summary_obj$dispersion["estimate"])[1]
         if(!is.na(alpha_disp)) populated_data$sigmasq <- alpha_disp
-      }
+      } # If not found through any method, it remains NA from template
+    } else {
+      # For distributions other than "nbinom" (e.g., "poisson"), sigmasq is not typically estimated in this way.
+      populated_data$sigmasq <- NA_real_ # Explicitly set to NA
     }
     
   } else { 
+    # This block handles when fit_object is NULL, an error, or not a tsglm object
+    # We start with template_data (which has NAs), then update status and error message
     current_status <- if(!is.null(template_data$status) && template_data$status != "Not Run") template_data$status else "Fit Error/Null"
     current_error_message <- if(!is.null(fit_object$message)) as.character(fit_object$message)[1] else if(!is.null(template_data$error_message) && template_data$error_message != "") template_data$error_message else "Fit object error or NULL"
     
-    # Ensure we are using the template to fill, then override status and error_message
-    for (col_name in names(template_data)) {
-      if (!col_name %in% c("status", "error_message")) { # Don't overwrite time if already set
-        if (col_name != "time" || is.na(populated_data[[col_name]])){ # only overwrite time if it's NA
-          populated_data[[col_name]] <- template_data[[col_name]]
-        }
-      }
-    }
+    # Preserve time if it was set before this function was called
+    populated_data <- template_data # Reset to template
+    populated_data$time <- template_data$time # Explicitly carry over time if it was in template_data
     populated_data$status <- current_status
     populated_data$error_message <- current_error_message
   }
   
-  # Final check for consistency for all fields based on global results_template
+  # Final check for consistency for all fields based on the global results_template
+  # This ensures all columns defined in results_template are present in the output row
+  # and have the correct NA type if they weren't populated.
   for(name_iter in names(results_template)) { 
     if(!name_iter %in% names(populated_data) || is.null(populated_data[[name_iter]]) || length(populated_data[[name_iter]]) == 0) {
       original_template_val <- results_template[[name_iter]] 
@@ -193,6 +192,7 @@ populate_results_from_fit_with_cov <- function(fit_object, template_data,
       }
       else populated_data[[name_iter]] <- NA 
     }
+    # Ensure empty strings for error_message and a default for status if they somehow became NA
     if(name_iter == "error_message" && (is.na(populated_data[[name_iter]]) || is.null(populated_data[[name_iter]]))) {
       populated_data[[name_iter]] <- "" 
     }
@@ -202,7 +202,6 @@ populate_results_from_fit_with_cov <- function(fit_object, template_data,
   }
   return(populated_data)
 }
-
 
 # Function to extract model parameters (including covariates) from Excel file
 extract_model_params_with_covariates <- function(data_path, model_row = 2,
@@ -576,7 +575,7 @@ run_simulation_study_with_covariates_parallel <- function() {
   grid_results_df     <- results_to_df(results$grid_search, "grid_search")
   results_df          <- dplyr::bind_rows(stepwise_results_df, grid_results_df)
   
-  output_dir <- "./simulation_output_parallel_detailed" 
+  output_dir <- "./simulation_with_covariates_output"
   if (!dir.exists(output_dir)) { dir.create(output_dir) }
   sims_filename <- file.path(output_dir, "ingarch_with_covariates_simulations.rds")
   results_csv_filename <- file.path(output_dir, "ingarch_with_covariates_results_parallel.csv") # Changed to CSV
