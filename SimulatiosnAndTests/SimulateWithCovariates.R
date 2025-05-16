@@ -1,14 +1,14 @@
 # INGARCH Model Simulation Study - With Covariates
 # Comparing model selection methods: auto.ingarch with stepwise vs grid search
-# Version: Refactored for parameter structure consistency
+# Version: Refactored for parameter structure consistency & text progress
 
 # Load required packages
 library(tscount)
 library(dplyr)
 library(readxl)
-library(doParallel)
-library(foreach)
-library(progressr)
+library(doParallel) # Still needed for parallel execution
+library(foreach)    # Still needed for parallel execution
+# Removed: library(progressr)
 
 # Source custom functions
 source("./custom/auto.ingarch.R")
@@ -16,7 +16,7 @@ source("./custom/ingarch.sim.R")
 source("./custom/newmodel.R")
 source("./custom/ingarch.string.R")
 source("./custom/search.ingarch.R")
-source("./custom/myingarch.R") # Ensure this is sourced
+source("./custom/myingarch.R")
 
 # Helper function to define a template for storing detailed results
 define_results_template_with_cov <- function(max_p_cols, max_q_cols, xreg_col_names) {
@@ -186,7 +186,6 @@ populate_results_from_fit_with_cov <- function(fit_object, template_data,
   return(populated_data)
 }
 
-# Function to extract model parameters (including covariates) from Excel file
 extract_model_params_with_covariates <- function(data_path, model_row = 2,
                                                  covariate_cols = c("Temp", "DTemp", "PM", "NO2")) {
   excel_data <- readxl::read_excel(data_path)
@@ -202,13 +201,13 @@ extract_model_params_with_covariates <- function(data_path, model_row = 2,
   sigmasq <- as.numeric(model_data$sigmasq)
   intercept <- as.numeric(model_data$Intercept)
   
-  beta_cols <- grep("^beta", colnames(excel_data), value = TRUE) # Case-sensitive by default
+  beta_cols <- grep("^beta", colnames(excel_data), value = TRUE) 
   betas <- if(p > 0 && length(beta_cols) >= p) as.numeric(unlist(model_data[, beta_cols[1:p]])) else if (p == 0) NULL else {
     warning(paste("Found fewer beta columns (", length(beta_cols), ") than p=", p, ". Using available or NULL."))
     if(length(beta_cols) > 0) as.numeric(unlist(model_data[, beta_cols])) else NULL
   }
   
-  alpha_cols <- grep("^alpha", colnames(excel_data), value = TRUE) # Case-sensitive by default
+  alpha_cols <- grep("^alpha", colnames(excel_data), value = TRUE) 
   alphas <- if(q > 0 && length(alpha_cols) >= q) as.numeric(unlist(model_data[, alpha_cols[1:q]])) else if (q == 0) NULL else {
     warning(paste("Found fewer alpha columns (", length(alpha_cols), ") than q=", q, ". Using available or NULL."))
     if(length(alpha_cols) > 0) as.numeric(unlist(model_data[, alpha_cols])) else NULL
@@ -236,22 +235,20 @@ extract_model_params_with_covariates <- function(data_path, model_row = 2,
   ))
 }
 
-# Main simulation study function
 run_simulation_study_with_covariates_parallel <- function() {
   set.seed(54321)
   
-  # --- Configuration Parameters (similar to SimulateWithoutCovariates.R) ---
-  num_simulations <- 3 # Number of datasets to simulate
-  sim_length <- 50     # Length of each time series
+  num_simulations <- 1000
+  sim_length <- 1000     
   progress_print_frequency <- max(1, floor(num_simulations / 10))
   
   task_max.p <- 7 
   task_max.q <- 7 
-  task_max.order_stepwise <- 5  # Max order for stepwise
-  task_max.order_grid <- 5     # Max order for grid search (e.g., task_max.p + task_max.q)
+  task_max.order_stepwise <- 5  
+  task_max.order_grid <- 14     
   task_distribution <- "nbinom"
   task_link <- "log"
-  task_ic <- "aic" # Information criterion for auto.ingarch
+  task_ic <- "aic" 
   
   cat("Starting INGARCH simulation study (WITH covariates).\n")
   cat("Configuration: num_simulations =", num_simulations, ", sim_length =", sim_length, "\n")
@@ -259,7 +256,6 @@ run_simulation_study_with_covariates_parallel <- function() {
   cat("  task_max.order_stepwise =", task_max.order_stepwise, ", task_max.order_grid =", task_max.order_grid, "\n")
   cat("  distribution =", task_distribution, ", link =", task_link, ", ic =", task_ic, "\n")
   
-  # --- 1. Setup Covariates ---
   cat("Loading covariate data...\n")
   covariate_data_path <- "./data/count_covariates_data.RData"
   if (!file.exists(covariate_data_path)) stop("Covariate data file not found: ", covariate_data_path)
@@ -273,7 +269,6 @@ run_simulation_study_with_covariates_parallel <- function() {
   xreg_matrix <- as.matrix(d_1_data[1:sim_length, cov_names_r, drop = FALSE])
   if(anyNA(xreg_matrix)) warning("NA values found in xreg_matrix.", immediate. = TRUE)
   
-  # --- 2. Extract True Model Parameters ---
   cat("Extracting true model parameters from Excel file...\n")
   excel_cov_names <- c("Temp", "DTemp", "PM", "NO2") 
   true_params <- extract_model_params_with_covariates("./data/modelosAveiro.xlsx", model_row = 2, covariate_cols = excel_cov_names)
@@ -285,7 +280,7 @@ run_simulation_study_with_covariates_parallel <- function() {
   cat("  External coefficients (Excel names -> R names for xreg_matrix):\n")
   
   sim_external_coefs_for_ingarch.sim <- true_params$external_coefs 
-  names(sim_external_coefs_for_ingarch.sim) <- cov_names_r # Rename to match xreg_matrix columns for ingarch.sim
+  names(sim_external_coefs_for_ingarch.sim) <- cov_names_r 
   
   for(i in 1:length(cov_names_r)){
     cat("    ", excel_cov_names[i], " (simulated as ", cov_names_r[i], ") = ", round(true_params$external_coefs[excel_cov_names[i]], 4), "\n")
@@ -306,11 +301,10 @@ run_simulation_study_with_covariates_parallel <- function() {
   size_param_for_sim <- 1/true_params$sigmasq
   cat("  Calculated 'size' parameter for nbinom simulation (1/sigmasq):", size_param_for_sim, "\n")
   
-  # --- 3. Simulate INGARCH with covariates ---
   cat(paste("Simulating", num_simulations, "INGARCH realizations of length", sim_length, "...\n"))
   sims <- vector("list", num_simulations)
   for(i in 1:num_simulations) {
-    if(i == 1 || i == num_simulations || (i %% progress_print_frequency == 0 && num_simulations > 10)) {
+    if(i == 1 || i == num_simulations || (i %% progress_print_frequency == 0 && num_simulations > 10)) { # Text progress
       cat("  Generating simulation", i, "of", num_simulations, "...\n")
     }
     sim_result <- tryCatch(
@@ -323,22 +317,20 @@ run_simulation_study_with_covariates_parallel <- function() {
   }
   cat("Finished generating simulations.\n")
   
-  # --- 4. Run model selection (PARALLELIZED) ---
   cat("Running PARALLEL model selection for INGARCH with covariates...\n")
   
-  # Define results_template and target_column_names (can be global or passed via .export)
-  # cov_names_r holds the R names for covariates used in xreg_matrix ("mean.Temp.Lag5", etc.)
   results_template <<- define_results_template_with_cov(task_max.p, task_max.q, cov_names_r) 
   target_column_names <<- c("method", "sim_id", names(results_template))
   
-  num_cores <- detectCores(logical = FALSE)
-  cores_to_use <- max(1, num_cores - 2) 
+  num_cores_detected <- detectCores(logical = FALSE) # Physical cores
+  cores_to_use <- max(1, num_cores_detected - 2) # Leave 2 cores free or use 1 if only 1-2 available
+  if(num_simulations < cores_to_use) cores_to_use <- num_simulations # Don't use more cores than tasks
+  
   cl <- makeCluster(cores_to_use)
   registerDoParallel(cl)
   cat(paste("Registered parallel backend with", getDoParWorkers(), "cores.\n"))
   
-  handlers(global = TRUE)
-  p_progress <- progressr::progressor(along = 1:length(sims))
+  # Removed progressr handlers
   
   custom_funcs_to_export <- c("auto.ingarch", "ingarch.sim", "newmodel",
                               "ingarch.string", "search.ingarch", "myingarch", 
@@ -346,101 +338,100 @@ run_simulation_study_with_covariates_parallel <- function() {
                               "results_template", "target_column_names") 
   custom_funcs_to_export <- custom_funcs_to_export[sapply(custom_funcs_to_export, exists, envir = .GlobalEnv, inherits = FALSE)]
   
-  with_progress({
-    parallel_results_list <- foreach(
-      i = 1:length(sims),
-      .packages = c("tscount", "stats", "dplyr"), 
-      .export = c("xreg_matrix", "task_max.p", "task_max.q", "task_max.order_stepwise", "task_max.order_grid", 
-                  "task_distribution", "task_link", "task_ic", "cov_names_r", custom_funcs_to_export),
-      .errorhandling = 'pass' 
-    ) %dopar% {
-      
-      sim_data <- sims[[i]]
-      worker_results_template <- define_results_template_with_cov(task_max.p, task_max.q, cov_names_r) # Ensure template is fresh for each worker/iteration
-      
-      current_stepwise_template <- worker_results_template 
-      current_grid_template     <- worker_results_template
-      
-      current_stepwise_template$time <- 0 
-      current_grid_template$time   <- 0   
-      
-      if (is.null(sim_data)) {
-        current_stepwise_template$status <- "Input Sim Failed"
-        current_stepwise_template$error_message <- "Simulated data was NULL"
-        current_grid_template$status <- "Input Sim Failed"
-        current_grid_template$error_message <- "Simulated data was NULL"
-        p_progress(sprintf("i=%d (skipped sim_data NULL)", i))
-        return(list(stepwise = current_stepwise_template, grid_search = current_grid_template))
-      }
-      if (length(sim_data) != nrow(xreg_matrix)) {
-        current_stepwise_template$status <- "Input Length Mismatch"
-        current_stepwise_template$error_message <- "Sim_data length != xreg_matrix rows"
-        current_grid_template$status <- "Input Length Mismatch"
-        current_grid_template$error_message <- "Sim_data length != xreg_matrix rows"
-        p_progress(sprintf("i=%d (skipped length mismatch)", i))
-        return(list(stepwise = current_stepwise_template, grid_search = current_grid_template))
-      }
-      
-      # --- Stepwise ---
-      start_time_stepwise <- Sys.time()
-      fit_stepwise <- tryCatch({
-        model <- auto.ingarch(y = sim_data, xreg = xreg_matrix, 
-                              max.p = task_max.p, max.q = task_max.q, max.order = task_max.order_stepwise,
-                              distribution = task_distribution, link = task_link, ic = task_ic,
-                              stepwise = TRUE, trace = FALSE, show_warnings = FALSE)
-        model 
-      }, error = function(e) {
-        current_stepwise_template$status <<- paste("Error") 
-        current_stepwise_template$error_message <<- conditionMessage(e)
-        return(list(error = TRUE, message = conditionMessage(e))) 
-      })
-      end_time_stepwise <- Sys.time()
-      current_stepwise_template$time <- as.numeric(difftime(end_time_stepwise, start_time_stepwise, units = "secs"))
-      
-      iter_stepwise_result <- populate_results_from_fit_with_cov(
-        fit_stepwise, current_stepwise_template, task_max.p, task_max.q, cov_names_r)
-      iter_stepwise_result$time <- current_stepwise_template$time 
-      if (inherits(fit_stepwise, "error") || is.null(fit_stepwise) || !inherits(fit_stepwise, "tsglm")) {
-        iter_stepwise_result$status <- current_stepwise_template$status 
-        iter_stepwise_result$error_message <- current_stepwise_template$error_message
-      }
-      
-      # --- Grid Search ---
-      start_time_grid <- Sys.time()
-      fit_grid <- tryCatch({
-        model <- auto.ingarch(y = sim_data, xreg = xreg_matrix, 
-                              max.p = task_max.p, max.q = task_max.q, max.order = task_max.order_grid,
-                              distribution = task_distribution, link = task_link, ic = task_ic,
-                              stepwise = FALSE, trace = FALSE, show_warnings = FALSE)
-        model 
-      }, error = function(e) {
-        current_grid_template$status <<- paste("Error") 
-        current_grid_template$error_message <<- conditionMessage(e)
-        return(list(error = TRUE, message = conditionMessage(e))) 
-      })
-      end_time_grid <- Sys.time()
-      current_grid_template$time <- as.numeric(difftime(end_time_grid, start_time_grid, units = "secs"))
-      
-      iter_grid_result <- populate_results_from_fit_with_cov(
-        fit_grid, current_grid_template, task_max.p, task_max.q, cov_names_r)
-      iter_grid_result$time <- current_grid_template$time 
-      if (inherits(fit_grid, "error") || is.null(fit_grid) || !inherits(fit_grid, "tsglm")) {
-        iter_grid_result$status <- current_grid_template$status 
-        iter_grid_result$error_message <- current_grid_template$error_message
-      }
-      if(iter_grid_result$status == "Success" && (is.na(iter_grid_result$n_models_tested) || iter_grid_result$n_models_tested == 0)) { 
-        iter_grid_result$n_models_tested <- (task_max.p + 1) * (task_max.q + 1)
-      }
-      
-      p_progress(sprintf("i=%d", i))
-      return(list(stepwise = iter_stepwise_result, grid_search = iter_grid_result))
-    } 
-  }) 
+  # Main parallel loop WITHOUT with_progress
+  parallel_results_list <- foreach(
+    i = 1:length(sims),
+    .packages = c("tscount", "stats", "dplyr"), 
+    .export = c("xreg_matrix", "task_max.p", "task_max.q", "task_max.order_stepwise", "task_max.order_grid", 
+                "task_distribution", "task_link", "task_ic", "cov_names_r", custom_funcs_to_export),
+    .errorhandling = 'pass' 
+  ) %dopar% {
+    
+    # Optional: Print a message from worker - this might be messy
+    # if (i %% (length(sims)/10) == 0 || i == 1 || i == length(sims)) { # Rough progress from workers
+    #   cat(sprintf("Worker %d processing task %d\n", Sys.getpid(), i))
+    # }
+    
+    sim_data <- sims[[i]]
+    worker_results_template <- define_results_template_with_cov(task_max.p, task_max.q, cov_names_r)
+    
+    current_stepwise_template <- worker_results_template 
+    current_grid_template     <- worker_results_template
+    
+    current_stepwise_template$time <- 0 
+    current_grid_template$time   <- 0   
+    
+    if (is.null(sim_data)) {
+      current_stepwise_template$status <- "Input Sim Failed"
+      current_stepwise_template$error_message <- "Simulated data was NULL"
+      current_grid_template$status <- "Input Sim Failed"
+      current_grid_template$error_message <- "Simulated data was NULL"
+      return(list(stepwise = current_stepwise_template, grid_search = current_grid_template))
+    }
+    if (length(sim_data) != nrow(xreg_matrix)) {
+      current_stepwise_template$status <- "Input Length Mismatch"
+      current_stepwise_template$error_message <- "Sim_data length != xreg_matrix rows"
+      current_grid_template$status <- "Input Length Mismatch"
+      current_grid_template$error_message <- "Sim_data length != xreg_matrix rows"
+      return(list(stepwise = current_stepwise_template, grid_search = current_grid_template))
+    }
+    
+    start_time_stepwise <- Sys.time()
+    fit_stepwise <- tryCatch({
+      model <- auto.ingarch(y = sim_data, xreg = xreg_matrix, 
+                            max.p = task_max.p, max.q = task_max.q, max.order = task_max.order_stepwise,
+                            distribution = task_distribution, link = task_link, ic = task_ic,
+                            stepwise = TRUE, trace = FALSE, show_warnings = FALSE)
+      model 
+    }, error = function(e) {
+      current_stepwise_template$status <- paste("Error") 
+      current_stepwise_template$error_message <- conditionMessage(e)
+      return(list(error = TRUE, message = conditionMessage(e))) 
+    })
+    end_time_stepwise <- Sys.time()
+    current_stepwise_template$time <- as.numeric(difftime(end_time_stepwise, start_time_stepwise, units = "secs"))
+    
+    iter_stepwise_result <- populate_results_from_fit_with_cov(
+      fit_stepwise, current_stepwise_template, task_max.p, task_max.q, cov_names_r)
+    iter_stepwise_result$time <- current_stepwise_template$time 
+    if (inherits(fit_stepwise, "error") || is.null(fit_stepwise) || !inherits(fit_stepwise, "tsglm")) {
+      iter_stepwise_result$status <- current_stepwise_template$status 
+      iter_stepwise_result$error_message <- current_stepwise_template$error_message
+    }
+    
+    start_time_grid <- Sys.time()
+    fit_grid <- tryCatch({
+      model <- auto.ingarch(y = sim_data, xreg = xreg_matrix, 
+                            max.p = task_max.p, max.q = task_max.q, max.order = task_max.order_grid,
+                            distribution = task_distribution, link = task_link, ic = task_ic,
+                            stepwise = FALSE, trace = FALSE, show_warnings = FALSE)
+      model 
+    }, error = function(e) {
+      current_grid_template$status <- paste("Error") 
+      current_grid_template$error_message <- conditionMessage(e)
+      return(list(error = TRUE, message = conditionMessage(e))) 
+    })
+    end_time_grid <- Sys.time()
+    current_grid_template$time <- as.numeric(difftime(end_time_grid, start_time_grid, units = "secs"))
+    
+    iter_grid_result <- populate_results_from_fit_with_cov(
+      fit_grid, current_grid_template, task_max.p, task_max.q, cov_names_r)
+    iter_grid_result$time <- current_grid_template$time 
+    if (inherits(fit_grid, "error") || is.null(fit_grid) || !inherits(fit_grid, "tsglm")) {
+      iter_grid_result$status <- current_grid_template$status 
+      iter_grid_result$error_message <- current_grid_template$error_message
+    }
+    if(iter_grid_result$status == "Success" && (is.na(iter_grid_result$n_models_tested) || iter_grid_result$n_models_tested == 0)) { 
+      iter_grid_result$n_models_tested <- (task_max.p + 1) * (task_max.q + 1)
+    }
+    
+    # Removed p_progress call
+    return(list(stepwise = iter_stepwise_result, grid_search = iter_grid_result))
+  } 
   
   stopCluster(cl)
   cat("Parallel cluster stopped.\n")
   
-  # --- Process Parallel Results ---
   results <- list(stepwise = vector("list", length(sims)), grid_search = vector("list", length(sims)))
   for (i in 1:length(parallel_results_list)) {
     if (inherits(parallel_results_list[[i]], "error")) {
@@ -463,7 +454,6 @@ run_simulation_study_with_covariates_parallel <- function() {
   }
   cat("Results restructured.\n")
   
-  # --- Convert lists to data frames ---
   results_to_df <- function(list_of_result_lists_input, method_name_str) {
     if (length(list_of_result_lists_input) == 0 || all(sapply(list_of_result_lists_input, is.null))) {
       df_cols <- lapply(target_column_names, function(col_name) { 
@@ -520,7 +510,7 @@ run_simulation_study_with_covariates_parallel <- function() {
       }
       return(final_df_row)
     })
-    if (length(df_list_for_rbind) == 0) { # Should not happen if input list is not empty
+    if (length(df_list_for_rbind) == 0) { 
       df_cols <- lapply(target_column_names, function(col_name) {
         template_col_class <- class(results_template[[col_name]])
         if(length(template_col_class) > 1) template_col_class <- template_col_class[1]
@@ -538,13 +528,12 @@ run_simulation_study_with_covariates_parallel <- function() {
   grid_results_df     <- results_to_df(results$grid_search, "grid_search")
   results_df          <- dplyr::bind_rows(stepwise_results_df, grid_results_df)
   
-  # --- Save results ---
-  output_dir <- "./simulation_output_parallel" 
-  if (!dir.exists(output_dir)) { dir.create(output_dir, recursive=TRUE) } # Added recursive
+  output_dir <- "./simulation_output_parallel" # Reverted to original for this specific output naming
+  if (!dir.exists(output_dir)) { dir.create(output_dir, recursive=TRUE) } 
   sims_filename <- file.path(output_dir, "ingarch_with_covariates_simulations.rds")
-  results_csv_filename <- file.path(output_dir, "ingarch_with_covariates_results.csv") 
-  summary_filename <- file.path(output_dir, "ingarch_with_covariates_summary.csv")
-  order_freq_filename <- file.path(output_dir, "ingarch_with_covariates_order_freq.csv")
+  results_csv_filename <- file.path(output_dir, "ingarch_with_covariates_results_parallel.csv") # Original was _parallel.rds
+  summary_filename <- file.path(output_dir, "ingarch_with_covariates_summary_parallel.csv")
+  order_freq_filename <- file.path(output_dir, "ingarch_with_covariates_order_freq_parallel.csv")
   
   saveRDS(sims, sims_filename)
   write.csv(results_df, results_csv_filename, row.names = FALSE, na = "") 
@@ -557,7 +546,7 @@ run_simulation_study_with_covariates_parallel <- function() {
                                 make.names(cov_names_r, unique = TRUE))
   for(col_s in numeric_cols_for_summary){
     if(col_s %in% names(results_df)){
-      results_df[[col_s]] <- as.numeric(as.character(results_df[[col_s]])) # Force conversion robustly
+      results_df[[col_s]] <- as.numeric(as.character(results_df[[col_s]])) 
     }
   }
   
@@ -605,13 +594,12 @@ run_simulation_study_with_covariates_parallel <- function() {
   print(results_df %>% group_by(method, status) %>% summarise(count = n(), .groups = 'drop') %>% arrange(method, desc(count)))
   
   cat(paste0("\nResults saved to directory: ", output_dir, "\n"))
-  cat("\n--- Please run warnings() to see any specific warnings generated during execution. ---\n")
+  # Removed explicit "Please run warnings()" as it might not be relevant if no warnings occurred.
+  # User can run it if they suspect issues.
   return(results_df)
 }
 
-# Main function to run the study
 main_parallel <- function() {
-  # Clear the global flag for diagnostic print before starting, if it was used
   if(exists(".coef_names_printed_flag_v4", envir = .GlobalEnv)){
     rm(".coef_names_printed_flag_v4", envir = .GlobalEnv)
   }
@@ -621,6 +609,8 @@ main_parallel <- function() {
                                  error = function(e) {
                                    cat("\nERROR during simulation study run:\n")
                                    print(e)
+                                   # Clean up parallel backend on error
+                                   if(exists("cl") && inherits(cl, "cluster")) try(stopCluster(cl), silent=TRUE)
                                    return(NULL)
                                  })
   overall_end_time <- Sys.time()
@@ -634,5 +624,4 @@ main_parallel <- function() {
   cat("Total duration of the study:", format(overall_duration), "\n")
 }
 
-# Execute main function
 main_parallel()
