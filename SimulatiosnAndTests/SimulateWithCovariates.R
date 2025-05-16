@@ -1,6 +1,5 @@
 # INGARCH Model Simulation Study - With Covariates
 # Comparing model selection methods: auto.ingarch with stepwise vs grid search
-# --- VERSION WITH PARALLELIZED MODEL SELECTION (FIXED EXPORT + PROGRESS BAR) ---
 
 # Load required packages
 # install.packages(c("tscount", "ggplot2", "dplyr", "readxl", "doParallel", "foreach", "progressr")) # Uncomment to install if needed

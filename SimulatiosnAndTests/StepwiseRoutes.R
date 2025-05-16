@@ -1,14 +1,5 @@
 # Main script: run_simulations_no_ts_validation.R
 
-# --- User Instructions ---
-# 1. CRITICAL: Set your R working directory to the PARENT directory of your 'custom' folder
-#    BEFORE running this script. (See detailed example in instructions above).
-#
-# 2. CRITICAL: Ensure that within your custom .R files (e.g., auto.ingarch.R),
-#    any `source()` calls to other files ALSO IN THE 'custom' FOLDER use the
-#    relative path starting with "./custom/".
-#    Example: inside 'custom/auto.ingarch.R', use source("./custom/newmodel.R")
-
 cat("Starting R script for stepwise path extraction (no explicit TS validation in main script)...\n")
 script_start_time <- Sys.time()
 

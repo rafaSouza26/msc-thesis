@@ -34,7 +34,7 @@ COUNT_VAR_INDEX <- 2  # Count is in column 2
 COVARIATE_INDICES <- 3:6  # Covariates are in columns 3, 4, 5, 6
 MIN_EXPECTED_COLUMNS <- max(c(COUNT_VAR_INDEX, COVARIATE_INDICES))
 
-OUTPUT_DIR <- "./district_fitting_output_simplified"
+OUTPUT_DIR <- "./district_fitting_sw_output"
 if (!dir.exists(OUTPUT_DIR)) {
   dir.create(OUTPUT_DIR, recursive = TRUE)
 }
@@ -43,7 +43,7 @@ RESULTS_CSV_FILE <- file.path(OUTPUT_DIR, "district_fitting_summary_simplified.c
 
 # --- Configuration for Districts to Process ---
 # Can easily adjust how many districts to process
-NUM_DISTRICTS_TO_PROCESS <- 1  # Change this number as needed (1-18)
+NUM_DISTRICTS_TO_PROCESS <- 18  # Change this number as needed (1-18)
 ALL_DISTRICT_CODES_AVAILABLE <- 1:18
 
 # Ensure NUM_DISTRICTS_TO_PROCESS is valid

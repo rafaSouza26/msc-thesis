@@ -1,2 +1,0 @@
-"district_code", "district_name", "p", "q", "aic"           , "bic"           , "aicc"          , "time_secs"     , "n_models_stepwise", "betas_str", "alphas_str"                                 , "covariates_used_names"                                    , "status"
-              1, "Aveiro"       ,   1,   6, 6101.42675860354, 6166.41925068114, 6099.42675860354, 1176.23802113533,                   0, "0.24574"  , "0.24261,0.11349,1e-04,1e-04,0.16444,0.44992", "mean.Temp.Lag5, mean.DTemp.Lag0, PM25.Lag0, mean.NO2.Lag2", "Success"

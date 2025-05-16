@@ -1,317 +1,343 @@
-# --- Script: auto.ingarch for Districts (stepwise = FALSE) ---
-# Stores Alphas and Betas as comma-separated strings
+# --- Apply auto.ingarch to District Data with Covariates by Index (Sequential) ---
+# Version: 2025-05-07 (Simplified with index-based covariates)
 
-# --- 0. Setup ---
-# Load necessary libraries
-if (!require(tscount)) {
-  install.packages("tscount")
-  library(tscount)
-}
+# Record script start time
+script_start_time <- Sys.time()
 
-# Suppress warnings globally (use with caution, inspect if unexpected results)
-options(warn = -1)
-# trace = FALSE and show_warnings = FALSE will be set in auto.ingarch call
+# --- 1. Load required packages ---
+library(tscount)
+library(dplyr)
+library(readxl)
 
-# Source custom functions from the 'custom' subdirectory
-tryCatch({
-  source("./custom/auto.ingarch.R") 
-  cat("Custom functions (auto.ingarch and its dependencies) loaded successfully.\n")
-}, error = function(e) {
-  stop("Error loading custom functions: ", e$message, 
-       "\nPlease ensure 'auto.ingarch.R' and its dependencies are accessible, typically in a './custom/' subdirectory relative to this script.")
-})
+# --- 2. Source custom functions ---
+cat("Sourcing custom functions...\n")
+tryCatch(source("./custom/auto.ingarch.R"), error = function(e) stop("Failed to source auto.ingarch.R: ", e))
+tryCatch(source("./custom/newmodel.R"), error = function(e) stop("Failed to source newmodel.R: ", e))
+tryCatch(source("./custom/ingarch.string.R"), error = function(e) stop("Failed to source ingarch.string.R: ", e))
+tryCatch(source("./custom/search.ingarch.R"), error = function(e) stop("Failed to source search.ingarch.R: ", e))
 
-
-# --- 1. Define File Paths and Parameters ---
-# !!! USER: MODIFY THESE PATHS AND SETTINGS AS NEEDED !!!
-input_rdata_file <- "./data/count_covariates_data.RData" # Adjusted default input file name and path
-output_csv_file_stepwise_false <- "district_ingarch_results_stepwise_FALSE_stringcoeffs.csv" # Output name
-
-# Number of districts to process from the loaded list (e.g., 18 for all, or a smaller number for testing)
-NUM_DISTRICTS_TO_PROCESS <- 1 # SET THIS TO THE DESIRED NUMBER 
-
-# auto.ingarch parameters
+# --- 3. Define Parameters and Setup ---
+cat("Defining parameters...\n")
 MAX_P <- 7
 MAX_Q <- 7
 DISTRIBUTION <- "nbinom"
-LINK_FUNCTION <- "log"
-IC_CRITERION <- "aic"
-STEPWISE_METHOD <- FALSE # << KEY CHANGE FOR THIS SCRIPT
-TRACE_OUTPUT <- FALSE 
-SHOW_MODEL_WARNINGS <- FALSE 
+LINK <- "log"
+IC <- "aic"
+STEPWISE <- FALSE  # Always use stepwise approach
+TRACE <- FALSE
+SHOW_WARNINGS <- FALSE
 
-NUM_COVARIATES <- 4 # Assuming 4 covariates as per description
-COEFF_ROUNDING_DIGITS <- 6 # For rounding coefficients in string
+DATA_PATH <- "./data/count_covariates_data.RData"
+COUNT_VAR_NAME <- "Count"
+# Using indices instead of names for data columns
+COUNT_VAR_INDEX <- 2  # Count is in column 2
+COVARIATE_INDICES <- 3:6  # Covariates are in columns 3, 4, 5, 6
+MIN_EXPECTED_COLUMNS <- max(c(COUNT_VAR_INDEX, COVARIATE_INDICES))
 
-# --- 2. Load District Data ---
-cat("Loading district data from:", input_rdata_file, "\n")
-if (!file.exists(input_rdata_file)) {
-  stop("Input RData file not found: ", input_rdata_file, 
-       "\nPlease ensure the path is correct and the file 'count_covariates_data.RData' exists (e.g., in a './data/' subdirectory).")
+OUTPUT_DIR <- "./district_fitting_gs_output"
+if (!dir.exists(OUTPUT_DIR)) {
+  dir.create(OUTPUT_DIR, recursive = TRUE)
 }
-load_env <- new.env() # Environment to load RData into
-load(input_rdata_file, envir = load_env) 
+RESULTS_RDS_FILE <- file.path(OUTPUT_DIR, "district_fitting_results_simplified.rds")
+RESULTS_CSV_FILE <- file.path(OUTPUT_DIR, "district_fitting_summary_simplified.csv")
 
-district_data_list <- NULL
-loaded_objects <- ls(envir = load_env)
+# --- Configuration for Districts to Process ---
+# Can easily adjust how many districts to process
+NUM_DISTRICTS_TO_PROCESS <- 18  # Change this number as needed (1-18)
+ALL_DISTRICT_CODES_AVAILABLE <- 1:18
 
-# Logic to correctly get district_data_list from loaded RData
-if (length(loaded_objects) == 1 && is.list(load_env[[loaded_objects[1]]])) {
-  # Case 1: RData file contains a single list object (e.g. a list of 18 district dataframes)
-  district_data_list <- load_env[[loaded_objects[1]]]
-  cat("Loaded data as a single list object:", loaded_objects[1], "\n")
-} else {
-  # Case 2: RData file contains multiple d_X_data objects (or similar pattern like d_1_data, d_2_data)
-  # This attempts to find objects matching the pattern "d_\\d+_data" (e.g., d_1_data)
-  district_df_names <- grep("^d_\\d+_data$", loaded_objects, value = TRUE)
-  if (length(district_df_names) > 0) {
-    district_data_list <- mget(district_df_names, envir = load_env)
-    cat("Collated district data from objects:", paste(district_df_names, collapse=", "), "\n")
-  } else if ("district_data_list" %in% loaded_objects && is.list(load_env[["district_data_list"]])) {
-    # Fallback: if an object specifically named "district_data_list" was loaded
-    district_data_list <- load_env[["district_data_list"]]
-    cat("Loaded data from an object named 'district_data_list'.\n")
-  }
+# Ensure NUM_DISTRICTS_TO_PROCESS is valid
+if (NUM_DISTRICTS_TO_PROCESS > length(ALL_DISTRICT_CODES_AVAILABLE)) {
+  warning(paste("NUM_DISTRICTS_TO_PROCESS (", NUM_DISTRICTS_TO_PROCESS,
+                ") is greater than available districts (", length(ALL_DISTRICT_CODES_AVAILABLE),
+                "). Processing all available districts instead."))
+  NUM_DISTRICTS_TO_PROCESS <- length(ALL_DISTRICT_CODES_AVAILABLE)
+}
+if (NUM_DISTRICTS_TO_PROCESS < 1) {
+  warning("NUM_DISTRICTS_TO_PROCESS is less than 1. Setting to 1.")
+  NUM_DISTRICTS_TO_PROCESS <- 1
 }
 
-if (is.null(district_data_list) || !is.list(district_data_list) || length(district_data_list) == 0) {
-  stop("Failed to load district data as a list from '", input_rdata_file ,"'. 
-       Please check its structure. It should contain either:
-       1. A single list object where each element is a district's data frame.
-       2. Multiple data frame objects named like 'd_1_data', 'd_2_data', etc.
-       Currently loaded objects: ", paste(loaded_objects, collapse=", "))
+DISTRICT_CODES_TO_PROCESS <- ALL_DISTRICT_CODES_AVAILABLE[1:NUM_DISTRICTS_TO_PROCESS]
+
+cat("Processing", NUM_DISTRICTS_TO_PROCESS, "district(s). Codes:", paste(DISTRICT_CODES_TO_PROCESS, collapse=", "), "\n")
+
+# District names lookup table
+DISTRICT_NAMES <- c("Aveiro", "Beja", "Braga", "Bragança", "Castelo Branco",
+                    "Coimbra", "Évora", "Faro", "Guarda", "Leiria", "Lisboa",
+                    "Portalegre", "Porto", "Santarém", "Setúbal",
+                    "Viana do Castelo", "Vila Real", "Viseu")
+district_lookup <- setNames(DISTRICT_NAMES, ALL_DISTRICT_CODES_AVAILABLE)
+
+# --- 4. Load Data ---
+cat("Loading district data from:", DATA_PATH, "\n")
+if (!file.exists(DATA_PATH)) {
+  stop("Data file not found: ", DATA_PATH)
 }
+load(DATA_PATH, envir = .GlobalEnv)
+cat("Data loaded into the Global Environment.\n")
 
-total_districts_available <- length(district_data_list)
-cat("Total districts available in loaded data:", total_districts_available, "\n")
+# --- 5. Verify Data Objects & Basic Structure Check ---
+cat("Verifying data objects and basic structure for selected districts...\n")
+missing_data_objs <- c()
+# Create names for only the districts we will process
+all_df_names_to_process <- paste0("d_", DISTRICT_CODES_TO_PROCESS, "_data")
+all_struct_ok <- TRUE
 
-num_districts_to_run <- total_districts_available
-if (!is.null(NUM_DISTRICTS_TO_PROCESS) && is.numeric(NUM_DISTRICTS_TO_PROCESS) && NUM_DISTRICTS_TO_PROCESS > 0) {
-  if (NUM_DISTRICTS_TO_PROCESS > total_districts_available) {
-    cat("Warning: Requested to process", NUM_DISTRICTS_TO_PROCESS, "districts, but only", total_districts_available, "are available. Processing all available.\n")
+for (df_name in all_df_names_to_process) {
+  if (!exists(df_name, envir = .GlobalEnv)) {
+    missing_data_objs <- c(missing_data_objs, df_name)
+    all_struct_ok <- FALSE
   } else {
-    num_districts_to_run <- NUM_DISTRICTS_TO_PROCESS
-  }
-}
-cat("Will process the first", num_districts_to_run, "districts.\n")
-
-district_names_all <- names(district_data_list)
-if (is.null(district_names_all) || length(district_names_all) != total_districts_available) {
-  district_names_all <- paste0("District_", 1:total_districts_available) # Fallback names
-}
-district_names_to_run <- district_names_all[1:num_districts_to_run]
-district_data_to_run <- district_data_list[1:num_districts_to_run]
-
-
-# --- 3. Initialize Results Storage ---
-results_collector_list <- list()
-
-# --- 4. Main Loop: Process Each District ---
-cat("Starting auto.ingarch modeling for each district (stepwise = FALSE)...\n") # << Log Message Updated
-
-for (i in 1:num_districts_to_run) {
-  district_name <- district_names_to_run[i]
-  cat("Processing:", district_name, "(", i, "/", num_districts_to_run, ")...\n")
-  
-  current_data <- district_data_to_run[[i]]
-  
-  temp_xreg_colnames_for_df <- paste0("Cov", 1:NUM_COVARIATES, "_coeff") 
-  if (is.data.frame(current_data) && ncol(current_data) >= (2 + NUM_COVARIATES)) {
-    current_xreg_original_names <- colnames(current_data[, 3:(2 + NUM_COVARIATES), drop = FALSE])
-    if(!is.null(current_xreg_original_names) && length(current_xreg_original_names) == NUM_COVARIATES && !any(duplicated(current_xreg_original_names)) && all(nchar(current_xreg_original_names)>0) ) {
-      temp_xreg_colnames_for_df <- paste0(make.names(current_xreg_original_names), "_coeff")
+    df_temp <- get(df_name, envir = .GlobalEnv)
+    if (!is.data.frame(df_temp)){
+      cat("ERROR: Object '", df_name, "' is not a data frame.\n")
+      all_struct_ok <- FALSE
+    } else if (ncol(df_temp) < MIN_EXPECTED_COLUMNS) {
+      cat("ERROR: Data frame '", df_name, "' has ", ncol(df_temp), " columns, but expected at least ", MIN_EXPECTED_COLUMNS, ".\n")
+      all_struct_ok <- FALSE
+    } else if (names(df_temp)[COUNT_VAR_INDEX] != COUNT_VAR_NAME) {
+      cat("ERROR: Data frame '", df_name, "' column ", COUNT_VAR_INDEX, " is named '", names(df_temp)[COUNT_VAR_INDEX], "' but expected '", COUNT_VAR_NAME, "'.\n")
+      all_struct_ok <- FALSE
     }
   }
+}
+
+if (length(missing_data_objs) > 0) {
+  stop("Stopping script. Missing required data frame objects for selected districts: ", paste(missing_data_objs, collapse=", "))
+}
+if (!all_struct_ok) {
+  stop("Stopping script due to data structure issues in selected districts. Please check error messages above and your data file/indices.")
+} else {
+  cat("Basic structure check passed for selected districts.\n")
+}
+
+# --- 6. Sequential Model Fitting ---
+cat("Starting sequential model fitting for", length(DISTRICT_CODES_TO_PROCESS), "districts...\n")
+
+# Initialize results list
+results_list <- list()
+
+# Sequential loop over each district
+for (i in DISTRICT_CODES_TO_PROCESS) {
+  cat("\nProcessing District", i, "(", district_lookup[as.character(i)], ")...\n")
   
-  all_result_colnames <- c("DistrictName", "p_order", "q_order", "AIC", "BIC", "AICc", 
-                           "NumModelsTested", "Intercept", "Betas_String", "Alphas_String", 
-                           temp_xreg_colnames_for_df, "Error")
+  # Initialize result for this district
+  iter_result <- list(
+    district_code = i, p = NA_integer_, q = NA_integer_,
+    aic = NA_real_, bic = NA_real_, aicc = NA_real_,
+    time_secs = NA_real_, n_models_stepwise = 0,  # Initialize to 0 instead of NA
+    betas_str = NA_character_, alphas_str = NA_character_,
+    covariates_used_names = NA_character_,
+    status = "Not Run"
+  )
   
-  error_row <- as.data.frame(matrix(NA, nrow = 1, ncol = length(all_result_colnames)))
-  colnames(error_row) <- all_result_colnames
-  error_row$DistrictName <- district_name
+  df_name <- paste0("d_", i, "_data")
+  xreg <- NULL
+  cov_names_for_this_district <- character(0)
   
-  if (!is.data.frame(current_data) || ncol(current_data) < (2 + NUM_COVARIATES)) {
-    cat("  Skipping", district_name, "- data is not a data frame or has insufficient columns.\n")
-    error_row$Error <- "Invalid data structure or insufficient columns"
-    results_collector_list[[district_name]] <- error_row
-    next
-  }
-  
-  count_data <- current_data[[2]] 
-  xreg_data <- as.matrix(current_data[, 3:(2 + NUM_COVARIATES), drop = FALSE]) 
-  
-  original_xreg_colnames <- colnames(xreg_data)
-  if (is.null(original_xreg_colnames) || length(original_xreg_colnames) != NUM_COVARIATES || any(duplicated(original_xreg_colnames)) || !all(nchar(original_xreg_colnames)>0)) {
-    original_xreg_colnames <- paste0("Cov", 1:NUM_COVARIATES) 
-    colnames(xreg_data) <- original_xreg_colnames
-  }
-  covariate_coeff_colnames_for_df <- paste0(make.names(original_xreg_colnames), "_coeff")
-  
-  fit_model <- NULL
-  error_message <- NA_character_
-  
-  tryCatch({
-    fit_model <- auto.ingarch(
-      y = count_data,
-      xreg = xreg_data,
-      max.p = MAX_P,
-      max.q = MAX_Q,
-      distribution = DISTRIBUTION,
-      link = LINK_FUNCTION,
-      ic = IC_CRITERION,
-      stepwise = STEPWISE_METHOD, # This is FALSE
-      trace = TRACE_OUTPUT,
-      show_warnings = SHOW_MODEL_WARNINGS
-    )
+  # Get the current district's data
+  current_data <- tryCatch({
+    df <- get(df_name, envir = .GlobalEnv)
+    if (!is.data.frame(df)) stop("Object is not a data frame.")
+    df
   }, error = function(e) {
-    cat("  Error fitting model for", district_name, ":", conditionMessage(e), "\n")
-    error_message <<- conditionMessage(e) 
+    iter_result$status <<- paste("Data Error:", conditionMessage(e))
+    return(NULL)
   })
   
-  if (!is.null(fit_model) && inherits(fit_model, "tsglm")) {
-    p_order <- if (is.null(fit_model$model$past_obs)) 0 else length(fit_model$model$past_obs)
-    q_order <- if (is.null(fit_model$model$past_mean)) 0 else length(fit_model$model$past_mean)
-    
-    aic_val <- tryCatch(fit_model$aic, error = function(e) NA)
-    bic_val <- tryCatch(fit_model$bic, error = function(e) NA)
-    aicc_val <- tryCatch(fit_model$aicc, error = function(e) NA)
-    
-    num_models <- NA
-    # For stepwise=FALSE, auto.ingarch calls search.ingarch.
-    # The 'results' element of the returned model is a matrix of tested models (p, q, ic).
-    if (!is.null(fit_model$results) && is.matrix(fit_model$results)) {
-      num_models <- nrow(fit_model$results) 
-    } else { 
-      # Fallback if results matrix isn't populated as expected, calculate from max orders
-      num_models <- (MAX_P + 1) * (MAX_Q + 1) 
-    }
-    
-    coeffs <- fit_model$coefficients
-    intercept_val <- ifelse("intercept" %in% names(coeffs), coeffs["intercept"], NA_real_)
-    
-    # Betas String (same logic as stepwise=TRUE version)
-    betas_string <- NA_character_
-    if (p_order > 0 && !is.null(coeffs) && length(coeffs) > 0) {
-      actual_betas_coeffs <- coeffs[grep("^beta", names(coeffs))]
-      if (length(actual_betas_coeffs) > 0) {
-        beta_names <- names(actual_betas_coeffs)
-        beta_indices <- sapply(beta_names, function(name) {
-          if (name == "beta") return(1L)
-          num_part <- sub("beta", "", name)
-          if (grepl("^[0-9]+$", num_part)) return(as.integer(num_part))
-          return(NA_integer_)
-        }, USE.NAMES = FALSE)
-        valid_indices <- !is.na(beta_indices)
-        actual_betas_coeffs <- actual_betas_coeffs[valid_indices]
-        beta_indices <- beta_indices[valid_indices]
-        if(length(actual_betas_coeffs) > 0){
-          ordered_betas <- actual_betas_coeffs[order(beta_indices)]
-          betas_string <- paste(round(ordered_betas, COEFF_ROUNDING_DIGITS), collapse = ", ")
-        } else { betas_string <- "" }
-      } else { betas_string <- "" }
-    } else if (p_order == 0) { betas_string <- "" }
-    
-    # Alphas String (same logic as stepwise=TRUE version)
-    alphas_string <- NA_character_
-    if (q_order > 0 && !is.null(coeffs) && length(coeffs) > 0) {
-      actual_alphas_coeffs <- coeffs[grep("^alpha", names(coeffs))]
-      if (length(actual_alphas_coeffs) > 0) {
-        alpha_names <- names(actual_alphas_coeffs)
-        alpha_indices <- sapply(alpha_names, function(name) {
-          if (name == "alpha") return(1L)
-          num_part <- sub("alpha", "", name)
-          if (grepl("^[0-9]+$", num_part)) return(as.integer(num_part))
-          return(NA_integer_)
-        }, USE.NAMES = FALSE)
-        valid_indices <- !is.na(alpha_indices)
-        actual_alphas_coeffs <- actual_alphas_coeffs[valid_indices]
-        alpha_indices <- alpha_indices[valid_indices]
-        if(length(actual_alphas_coeffs) > 0){
-          ordered_alphas <- actual_alphas_coeffs[order(alpha_indices)]
-          alphas_string <- paste(round(ordered_alphas, COEFF_ROUNDING_DIGITS), collapse = ", ")
-        } else { alphas_string <- "" }
-      } else { alphas_string <- "" }
-    } else if (q_order == 0) { alphas_string <- "" }
-    
-    cov_coeffs_padded <- rep(NA_real_, NUM_COVARIATES)
-    if(!is.null(coeffs) && length(coeffs) > 0){
-      for(k_idx in 1:NUM_COVARIATES){
-        original_cov_name <- original_xreg_colnames[k_idx]
-        tsglm_cov_name_pattern <- paste0("xreg", k_idx) 
-        if (original_cov_name %in% names(coeffs)) {
-          cov_coeffs_padded[k_idx] <- coeffs[original_cov_name]
-        } else if (tsglm_cov_name_pattern %in% names(coeffs)) { 
-          cov_coeffs_padded[k_idx] <- coeffs[tsglm_cov_name_pattern]
+  if (!is.null(current_data)) {
+    if (ncol(current_data) < MIN_EXPECTED_COLUMNS) {
+      iter_result$status <- "Insufficient columns in data"
+    } else {
+      # Extract response variable (count)
+      y <- current_data[, COUNT_VAR_INDEX]
+      
+      # Extract covariates using indices
+      if(max(COVARIATE_INDICES) <= ncol(current_data)) {
+        xreg <- as.matrix(current_data[, COVARIATE_INDICES])
+        cov_names_for_this_district <- colnames(current_data)[COVARIATE_INDICES]
+        iter_result$covariates_used_names <- paste(cov_names_for_this_district, collapse=", ")
+      } else {
+        iter_result$status <- "Covariate indices out of bounds for this dataframe."
+        xreg <- NULL # Cannot form xreg
+      }
+      
+      # Check for NA values
+      if (anyNA(y)) {
+        iter_result$status <- "NA values in response (y)"
+      } else if (!is.null(xreg) && anyNA(xreg)) {
+        iter_result$status <- "NA values in covariates (xreg)"
+      } else if (iter_result$status == "Not Run") {
+        # Fit the model
+        fit_status <- "Fit Failed"
+        start_time_fit <- Sys.time()
+        
+        fit_model <- tryCatch({
+          cat("  Fitting auto.ingarch model with covariates...\n")
+          model <- auto.ingarch(
+            y = y, xreg = xreg, max.p = MAX_P, max.q = MAX_Q,
+            distribution = DISTRIBUTION, link = LINK, ic = IC,
+            stepwise = STEPWISE, trace = TRACE, show_warnings = SHOW_WARNINGS
+          )
+          if (!inherits(model, "tsglm")) {
+            stop("auto.ingarch did not return a valid model object")
+          }
+          fit_status <<- "Success"
+          model
+        }, error = function(e) {
+          fit_status <<- paste("Fitting Error:", conditionMessage(e))
+          cat("  Model fitting error:", conditionMessage(e), "\n")
+          return(NULL)
+        })
+        
+        end_time_fit <- Sys.time()
+        time_fit <- as.numeric(difftime(end_time_fit, start_time_fit, units = "secs"))
+        
+        iter_result$time_secs <- time_fit
+        iter_result$status <- fit_status
+        
+        # Extract results from the model if successful
+        if (fit_status == "Success" && !is.null(fit_model) && inherits(fit_model, "tsglm")) {
+          # Extract p and q
+          iter_result$p <- if (is.null(fit_model$model$past_obs)) 0 else length(fit_model$model$past_obs)
+          iter_result$q <- if (is.null(fit_model$model$past_mean)) 0 else length(fit_model$model$past_mean)
+          
+          # Extract information criteria
+          iter_result$aic <- tryCatch(stats::AIC(fit_model), error = function(e) NA_real_)
+          iter_result$bic <- tryCatch(stats::BIC(fit_model), error = function(e) NA_real_)
+          
+          if (!is.null(fit_model[[IC]])) {
+            iter_result$aicc <- fit_model[[IC]]
+          } else if (!is.null(fit_model$results) && IC %in% names(fit_model$results)) {
+            best_model_row <- which.min(fit_model$results[[IC]])
+            if(length(best_model_row) == 1) iter_result$aicc <- fit_model$results[[IC]][best_model_row]
+          }
+          
+          # Count number of models evaluated
+          if(!is.null(fit_model$results) && inherits(fit_model$results, "data.frame")) {
+            iter_result$n_models_stepwise <- nrow(fit_model$results)
+          } else if(!is.null(fit_model$n_total_models)) {
+            # Backup method to get number of models evaluated
+            iter_result$n_models_stepwise <- fit_model$n_total_models
+          } else {
+            # Set a default value instead of NA
+            iter_result$n_models_stepwise <- 1
+          }
+          
+          # Extract beta and alpha coefficients
+          all_coeffs <- stats::coef(fit_model)
+          
+          # Beta coefficients (past observations)
+          if (iter_result$p > 0) {
+            beta_coef_names <- paste0("beta_", 1:iter_result$p)
+            actual_beta_coeffs <- all_coeffs[names(all_coeffs) %in% beta_coef_names]
+            iter_result$betas_str <- if (length(actual_beta_coeffs) > 0) 
+              paste(round(actual_beta_coeffs, 5), collapse=",") else ""
+          } else { 
+            iter_result$betas_str <- "" 
+          }
+          
+          # Alpha coefficients (past means)
+          if (iter_result$q > 0) {
+            alpha_coef_names <- paste0("alpha_", 1:iter_result$q)
+            actual_alpha_coeffs <- all_coeffs[names(all_coeffs) %in% alpha_coef_names]
+            iter_result$alphas_str <- if (length(actual_alpha_coeffs) > 0) 
+              paste(round(actual_alpha_coeffs, 5), collapse=",") else ""
+          } else { 
+            iter_result$alphas_str <- "" 
+          }
+          
+          cat("  Model fitted successfully: p=", iter_result$p, ", q=", iter_result$q, 
+              ", AICc=", round(iter_result$aicc, 2), 
+              ", Models evaluated=", iter_result$n_models_stepwise, "\n", sep="")
+        } else {
+          cat("  Model fitting failed with status:", fit_status, "\n")
         }
       }
     }
-    names(cov_coeffs_padded) <- covariate_coeff_colnames_for_df
-    
-    results_df_row_list <- list(
-      DistrictName = district_name,
-      p_order = p_order,
-      q_order = q_order,
-      AIC = aic_val,
-      BIC = bic_val,
-      AICc = aicc_val,
-      NumModelsTested = num_models,
-      Intercept = intercept_val,
-      Betas_String = betas_string,
-      Alphas_String = alphas_string
-    )
-    for(k_idx in 1:NUM_COVARIATES){
-      results_df_row_list[[covariate_coeff_colnames_for_df[k_idx]]] <- cov_coeffs_padded[k_idx]
-    }
-    results_df_row_list[["Error"]] <- error_message
-    
-    current_results_df <- as.data.frame(results_df_row_list, stringsAsFactors = FALSE)
-    results_collector_list[[district_name]] <- current_results_df
-    
-  } else {
-    cat("  Failed to fit model for", district_name, "or model object is not tsglm.\n")
-    error_row$Error <- ifelse(is.na(error_message), "Fit failed or model not tsglm", error_message)
-    results_collector_list[[district_name]] <- error_row
   }
+  
+  # Add this district's results to the overall list
+  results_list[[length(results_list) + 1]] <- iter_result
+  cat("Completed District", i, "with status:", iter_result$status, "\n")
 }
 
-# --- 5. Combine and Save Results ---
-cat("Combining results...\n")
-if (length(results_collector_list) > 0) {
-  base_cols <- c("DistrictName", "p_order", "q_order", "AIC", "BIC", "AICc", 
-                 "NumModelsTested", "Intercept", "Betas_String", "Alphas_String")
-  all_dynamic_cov_cols <- unique(unlist(lapply(results_collector_list, function(df) {
-    grep("_coeff$", names(df), value = TRUE)
-  })))
-  final_ordered_colnames <- c(base_cols, sort(all_dynamic_cov_cols), "Error")
-  
-  standardized_results_list <- lapply(results_collector_list, function(df) {
-    new_df <- data.frame(matrix(NA, nrow = 1, ncol = length(final_ordered_colnames)))
-    colnames(new_df) <- final_ordered_colnames
-    for (col_name in names(df)) {
-      if (col_name %in% final_ordered_colnames) {
-        new_df[1, col_name] <- df[1, col_name]
-      }
+# --- 7. Process and Combine Results ---
+cat("\nProcessing results...\n")
+
+if (length(results_list) > 0) {
+  # Convert list of results to data frame
+  results_df <- bind_rows(lapply(results_list, function(res) {
+    # Ensure n_models_stepwise is numeric before binding
+    if ("n_models_stepwise" %in% names(res) && is.na(res$n_models_stepwise)) {
+      res$n_models_stepwise <- 0
     }
-    new_df$DistrictName <- as.character(df$DistrictName)
-    return(new_df)
-  })
+    as.data.frame(res, stringsAsFactors = FALSE)
+  }))
   
-  final_results_df <- do.call(rbind, standardized_results_list)
-  rownames(final_results_df) <- NULL 
-  
-  cat("Saving results to CSV:", output_csv_file_stepwise_false, "\n")
-  tryCatch({
-    write.csv(final_results_df, output_csv_file_stepwise_false, row.names = FALSE, na = "")
-    cat("Successfully saved results.\n")
-  }, error = function(e) {
-    cat("Error saving CSV file:", conditionMessage(e), "\n")
-  })
+  # Add district names
+  results_df <- results_df %>%
+    mutate(district_name = ifelse(!is.na(district_code), district_lookup[as.character(district_code)], NA_character_)) %>%
+    select(district_code, district_name, p, q, aic, bic, aicc, time_secs,
+           n_models_stepwise, betas_str, alphas_str, covariates_used_names, status)
 } else {
-  cat("No results to save.\n")
+  # Create empty structure if no results
+  results_df <- data.frame(
+    district_code = integer(0), district_name = character(0), p = integer(0), q = integer(0),
+    aic = numeric(0), bic = numeric(0), aicc = numeric(0),
+    time_secs = numeric(0), n_models_stepwise = integer(0),
+    betas_str = character(0), alphas_str = character(0),
+    covariates_used_names = character(0), status = character(0),
+    stringsAsFactors = FALSE  # Ensure strings don't get converted to factors
+  )
+  cat("No results to process or save.\n")
 }
 
-# Restore warning settings
-options(warn = 0)
+# --- 8. Save Results ---
+if(nrow(results_df) > 0) {
+  cat("Saving results to:", OUTPUT_DIR, "\n")
+  tryCatch({ 
+    saveRDS(results_df, file = RESULTS_RDS_FILE)
+    cat("Detailed results saved to:", RESULTS_RDS_FILE, "\n")
+  }, error = function(e) { cat("ERROR saving RDS file:", conditionMessage(e), "\n") })
+  
+  tryCatch({ 
+    # Ensure n_models_stepwise is numeric before writing to CSV
+    results_df$n_models_stepwise <- as.numeric(results_df$n_models_stepwise)
+    # Replace NA with 0 for n_models_stepwise
+    results_df$n_models_stepwise[is.na(results_df$n_models_stepwise)] <- 0
+    
+    write.csv(results_df, file = RESULTS_CSV_FILE, row.names = FALSE, na = "")
+    cat("Summary results saved to:", RESULTS_CSV_FILE, "\n")
+  }, error = function(e) { cat("ERROR saving CSV file:", conditionMessage(e), "\n") })
+}
 
-cat("--- Script finished for stepwise = FALSE (string coeffs) ---\n") # << Log Message Updated
+# --- 9. Display Summary ---
+cat("\n===== Fitting Summary (Simplified, Index-based Covariates) =====\n")
+if(nrow(results_df) > 0) {
+  print(as.data.frame(results_df[, c("district_code", "district_name", "p", "q", "aicc",
+                                     "time_secs", "betas_str", "alphas_str", "covariates_used_names", "status")]),
+        row.names = FALSE, max = nrow(results_df) + 5)
+} else {
+  cat("No results to display.\n")
+}
+
+cat("\n===== Status Summary =====\n")
+if(nrow(results_df) > 0) {
+  results_df$status <- as.character(results_df$status) # Ensure character for grouping
+  status_summary <- results_df %>%
+    group_by(status) %>%
+    summarise(count = n(), .groups = 'drop') %>%
+    arrange(desc(count))
+  print(status_summary)
+} else {
+  cat("No status summary to display.\n")
+}
+
+cat("\n--- Script finished --- \n")
+
+# Calculate and print total run time
+script_end_time <- Sys.time()
+total_run_time <- difftime(script_end_time, script_start_time, units = "auto")
+cat("Total run time:", format(total_run_time), attr(total_run_time, "units"), "\n")
