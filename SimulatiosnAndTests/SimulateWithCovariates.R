@@ -117,7 +117,7 @@ run_simulation_study_with_covariates_parallel <- function() {
     missing_cols <- cov_names_r[!cov_names_r %in% colnames(d_1_data)]
     stop("Missing required covariate columns in d_1_data: ", paste(missing_cols, collapse=", "))
   }
-  n_obs_sim <- 1000 # Reduced for quicker testing if needed, originally 1000
+  n_obs_sim <- 10
   if (nrow(d_1_data) < n_obs_sim) {
     stop(paste("Covariate data frame 'd_1_data' has only", nrow(d_1_data), "rows, but", n_obs_sim, "are required."))
   }
@@ -179,7 +179,7 @@ run_simulation_study_with_covariates_parallel <- function() {
   
   
   # --- 3. Simulate INGARCH with covariates ---
-  n_sims <- 1000 # Set desired number of simulations (e.g., 100 for testing, 1000 for full run)
+  n_sims <- 1 # Set desired number of simulations (e.g., 100 for testing, 1000 for full run)
   cat(paste("Simulating", n_sims, "INGARCH realizations with covariates...\n")) # Adapted message
   sims <- vector("list", n_sims)
   
@@ -250,7 +250,7 @@ run_simulation_study_with_covariates_parallel <- function() {
   max_order_q <- 7
   
   # --- Setup Parallel Backend ---
-  num_cores <- detectCores()
+  num_cores <- detectCores(logical = FALSE)
   print(paste("Detected cores:", num_cores))
   cores_to_use <- max(1, num_cores - 1) # Use n-1 cores
   print(paste("Registering parallel backend with", cores_to_use, "cores."))
@@ -455,15 +455,21 @@ run_simulation_study_with_covariates_parallel <- function() {
   grid_results_df <- results_to_df(results$grid_search, "grid_search")
   results_df <- rbind(stepwise_results_df, grid_results_df)
   
-  # Save results (no printing here, final message later)
-  output_dir <- "./simulation_output_parallel" # Changed output dir name slightly
+  # output_dir
+  output_dir <- "./simulation_with_covariates_output" 
   if (!dir.exists(output_dir)) { dir.create(output_dir) }
+  
+  # Define filenames
   sims_filename <- file.path(output_dir, "ingarch_with_covariates_simulations.rds")
-  results_filename <- file.path(output_dir, "ingarch_with_covariates_results_parallel.rds")
+  results_filename_csv <- file.path(output_dir, "ingarch_with_covariates_results_parallel.csv") # Changed to .csv
   summary_filename <- file.path(output_dir, "ingarch_with_covariates_summary_parallel.csv")
   order_freq_filename <- file.path(output_dir, "ingarch_with_covariates_order_freq_parallel.csv")
-  saveRDS(sims, sims_filename) # Save the original simulations
-  saveRDS(results_df, results_filename) # Save the results data frame
+  
+  # Save simulations (still as RDS as per original structure for this file)
+  saveRDS(sims, sims_filename) 
+  
+  # Save the results_df data frame as CSV only
+  write.csv(results_df, results_filename_csv, row.names = FALSE) 
   
   # Calculate summary statistics
   # Make sure status column exists and is character before filtering
