@@ -1,3 +1,3 @@
-"method","total_sims","successful_fits","mean_p","median_p","sd_p","mean_q","median_q","sd_q","mean_time_secs","median_time_secs","sd_time_secs","mean_models_tested","median_models_tested","sd_models_tested","failure_count"
-"grid_search",1000,1000,1.89,1,1.60326868318148,5.711,6,1.60126295249813,3101.89245022488,3011.67598998547,913.361887882521,64,64,0,0
-"stepwise",1000,1000,1.512,1,0.795291448771134,2.889,3,1.52610877987384,1057.36637961769,1011.17656707764,578.713461802133,12.58,12,2.98906917526753,0
+"method"     , "mean_p", "median_p", "sd_p"           , "mean_q", "median_q", "sd_q"          , "mean_time"     , "median_time"   , "sd_time"       , "mean_models_tested", "median_models_tested", "sd_models_tested"
+"grid_search",    1.89 ,          1, 1.60326868318148 ,    5.711,          6, 1.60126295249813, 3101.89245022488, 3011.67598998547, 913.361887882521,                64   ,                     64,   0
+"stepwise"   ,    1.512,          1, 0.795291448771134,    2.889,          3, 1.52610877987384, 1057.36637961769, 1011.17656707764, 578.713461802133,                12.58,                     12,   2.98906917526753

@@ -1,3 +1,3 @@
-"method","mean_p","median_p","sd_p","mean_q","median_q","sd_q","mean_time","median_time","mean_models","median_models","na_count"
-"grid_search",3.118,3,2.11436670105886,4.727,5,1.44518495686869,84.2678240787983,83.3154768943787,64,64,0
-"stepwise",1.262,1,0.534454527197255,4.291,4,1.38717094953839,15.1365025668144,14.3087965250015,15.393,16,0
+"method"     , "mean_p", "median_p", "sd_p"           , "mean_q", "median_q", "sd_q"          , "mean_time"     , "median_time"   , "sd_time", "mean_models_tested", "median_models", "sd_models_tested"
+"grid_search",    3.118,          3, 2.11436670105886 ,    4.727,          5, 1.44518495686869, 84.2678240787983, 83.3154768943787, NA       ,               64    ,              64, NA
+"stepwise"   ,    1.262,          1, 0.534454527197255,    4.291,          4, 1.38717094953839, 15.1365025668144, 14.3087965250015, NA       ,               15.393,              16, NA
