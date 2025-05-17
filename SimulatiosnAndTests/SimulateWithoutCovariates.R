@@ -257,7 +257,7 @@ run_simulation_study_no_covariates <- function() {
     grid_time_taken <- system.time({
       grid_fit_object <- tryCatch({
         auto.ingarch(y = sim_data_ts, max.p = task_max.p, max.q = task_max.q, max.order = task_max.order_grid,
-                     distribution = task_distribution, link = task_link, ic = "aicc",
+                     distribution = task_distribution, link = task_link, ic = "aic",
                      stepwise = FALSE, trace = FALSE, show_warnings = FALSE, parallel = FALSE)
       }, error = function(e) list(error = TRUE, message = conditionMessage(e)))
     })["elapsed"]

@@ -1,0 +1,144 @@
+Job Information for Job ID: 3942 from a.r.martins
+------------ ------------
+Account: tier3
+CPUs per Node: 1
+RAM: 16G
+Partition: cpu
+QOS: tier3
+Start Time: 2025-05-16 16:57:41 WEST
+Running On Node: cpu-srv-03
+------------ ------------
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+Sourcing custom functions...
+Defining parameters...
+Processing 18 district(s). Codes: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 
+Loading district data from: ./data/count_covariates_data.RData 
+Data loaded.
+Verifying data objects...
+Data structure check passed.
+Starting sequential model fitting for 18 districts...
+
+Processing District 1 ( Aveiro )...
+  Fitting auto.ingarch (stepwise= TRUE , ic= aic )...
+  Model fitted successfully: p=1, q=6, Selected IC (aic)=6101.42, Models evaluated=26
+Completed District 1 with status: Success 
+
+Processing District 2 ( Beja )...
+  Fitting auto.ingarch (stepwise= TRUE , ic= aic )...
+  Model fitted successfully: p=1, q=1, Selected IC (aic)=3755.39, Models evaluated=9
+Completed District 2 with status: Success 
+
+Processing District 3 ( Braga )...
+  Fitting auto.ingarch (stepwise= TRUE , ic= aic )...
+  Model fitted successfully: p=1, q=3, Selected IC (aic)=6883.96, Models evaluated=17
+Completed District 3 with status: Success 
+
+Processing District 4 ( Bragança )...
+  Fitting auto.ingarch (stepwise= TRUE , ic= aic )...
+  Model fitted successfully: p=1, q=2, Selected IC (aic)=4677.31, Models evaluated=14
+Completed District 4 with status: Success 
+
+Processing District 5 ( Castelo Branco )...
+  Fitting auto.ingarch (stepwise= TRUE , ic= aic )...
+  Model fitted successfully: p=1, q=1, Selected IC (aic)=4677.45, Models evaluated=9
+Completed District 5 with status: Success 
+
+Processing District 6 ( Coimbra )...
+  Fitting auto.ingarch (stepwise= TRUE , ic= aic )...
+  Model fitted successfully: p=1, q=3, Selected IC (aic)=5697.86, Models evaluated=17
+Completed District 6 with status: Success 
+
+Processing District 7 ( Évora )...
+  Fitting auto.ingarch (stepwise= TRUE , ic= aic )...
+  Model fitted successfully: p=1, q=0, Selected IC (aic)=4381.03, Models evaluated=7
+Completed District 7 with status: Success 
+
+Processing District 8 ( Faro )...
+  Fitting auto.ingarch (stepwise= TRUE , ic= aic )...
+  Model fitted successfully: p=1, q=1, Selected IC (aic)=4947.79, Models evaluated=9
+Completed District 8 with status: Success 
+
+Processing District 9 ( Guarda )...
+  Fitting auto.ingarch (stepwise= TRUE , ic= aic )...
+  Model fitted successfully: p=1, q=4, Selected IC (aic)=4649.86, Models evaluated=20
+Completed District 9 with status: Success 
+
+Processing District 10 ( Leiria )...
+  Fitting auto.ingarch (stepwise= TRUE , ic= aic )...
+  Model fitted successfully: p=1, q=2, Selected IC (aic)=6269.31, Models evaluated=14
+Completed District 10 with status: Success 
+
+Processing District 11 ( Lisboa )...
+  Fitting auto.ingarch (stepwise= TRUE , ic= aic )...
+  Model fitted successfully: p=5, q=6, Selected IC (aic)=7937.83, Models evaluated=32
+Completed District 11 with status: Success 
+
+Processing District 12 ( Portalegre )...
+  Fitting auto.ingarch (stepwise= TRUE , ic= aic )...
+  Model fitted successfully: p=2, q=1, Selected IC (aic)=3740.12, Models evaluated=12
+Completed District 12 with status: Success 
+
+Processing District 13 ( Porto )...
+  Fitting auto.ingarch (stepwise= TRUE , ic= aic )...
+  Model fitted successfully: p=1, q=6, Selected IC (aic)=7161.58, Models evaluated=27
+Completed District 13 with status: Success 
+
+Processing District 14 ( Santarém )...
+  Fitting auto.ingarch (stepwise= TRUE , ic= aic )...
+  Model fitted successfully: p=1, q=2, Selected IC (aic)=6008.82, Models evaluated=14
+Completed District 14 with status: Success 
+
+Processing District 15 ( Setúbal )...
+  Fitting auto.ingarch (stepwise= TRUE , ic= aic )...
+  Model fitted successfully: p=1, q=3, Selected IC (aic)=6387.44, Models evaluated=17
+Completed District 15 with status: Success 
+
+Processing District 16 ( Viana do Castelo )...
+  Fitting auto.ingarch (stepwise= TRUE , ic= aic )...
+  Model fitted successfully: p=1, q=1, Selected IC (aic)=4597.07, Models evaluated=9
+Completed District 16 with status: Success 
+
+Processing District 17 ( Vila Real )...
+  Fitting auto.ingarch (stepwise= TRUE , ic= aic )...
+  Model fitted successfully: p=1, q=1, Selected IC (aic)=5388.89, Models evaluated=9
+Completed District 17 with status: Success 
+
+Processing District 18 ( Viseu )...
+  Fitting auto.ingarch (stepwise= TRUE , ic= aic )...
+  Model fitted successfully: p=1, q=3, Selected IC (aic)=5593.38, Models evaluated=17
+Completed District 18 with status: Success 
+
+Processing results...
+Saving detailed results to: ./real_data_application_sw 
+Detailed results saved to CSV: ./real_data_application_sw/district_fitting_detailed_results_stepwise.csv 
+
+===== Fitting Summary (Stepwise, IC= aic ) =====
+ district_code district_name p q aic_value time_secs  status mean.Temp.Lag5
+             1        Aveiro 1 6  6101.416  770.2764 Success   -0.007522839
+             2          Beja 1 1  3755.390  317.3679 Success             NA
+ mean.DTemp.Lag0   PM25.Lag0 mean.NO2.Lag2
+      0.00741701 0.003302444  -0.006814925
+              NA 0.010207215  -0.043075329
+ [ reached 'max' / getOption("max.print") -- omitted 16 rows ]
+
+===== Status Summary =====
+# A tibble: 1 × 2
+  status  count
+  <chr>   <int>
+1 Success    18
+
+--- Script finished --- 
+Total run time: 4.61274 hours hours 
+[1] "completed"
+------------ ------------
+End Time: 2025-05-16 21:34:28 WEST
