@@ -1,0 +1,3 @@
+"method","mean_p_order","median_p_order","sd_p_order","mean_q_order","median_q_order","sd_q_order","mean_time_secs","median_time_secs","mean_fitted_models","median_fitted_models","successful_fits","failed_fits"
+"grid_search",3.19,3,2.13083092723014,4.752,5,1.43894633901566,100.57165,99.880000000001,64,64,1000,0
+"stepwise",2.178,2,1.20489325990636,2.359,2,2.12570873772435,22.44854,21.8150000000023,17.264,18,1000,0
