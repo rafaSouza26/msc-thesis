@@ -60,12 +60,12 @@ if __name__ == "__main__":
     # ====================================================================
     
     # Input RDS file path - EDIT THIS LINE with your Windows path
-    input_file = r"C:\Users\rafas\Desktop\msc-thesis\old\results\simulatedDataResults\ingarch_no_covariates_results.rds"
+    input_file = r"C:\Users\Rafael\Desktop\msc-thesis\old\results\simulatedDataResults\ingarch_with_covariates_results.rds"
     
     # Output CSV file path - EDIT THIS LINE with your Windows path
     # If you want the output in the same folder as the input with an automatic name,
     # you can set this to None
-    output_file = r"C:\Users\rafas\Desktop\msc-thesis\utils\no_covariates_stats.csv"
+    output_file = r"C:\Users\Rafael\Desktop\msc-thesis\utils\with_covariates_stats.csv"
     
     # ====================================================================
     # END OF PATH CONFIGURATION

@@ -1,0 +1,144 @@
+Job Information for Job ID: 3943 from a.r.martins
+------------ ------------
+Account: tier3
+CPUs per Node: 1
+RAM: 16G
+Partition: cpu
+QOS: tier3
+Start Time: 2025-05-16 16:58:00 WEST
+Running On Node: cpu-srv-03
+------------ ------------
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+Sourcing custom functions...
+Defining parameters...
+Processing 18 district(s) using GRID SEARCH. Codes: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 
+Loading district data from: ./data/count_covariates_data.RData 
+Data loaded.
+Verifying data objects...
+Data structure check passed.
+Starting sequential model fitting (Grid Search) for 18 districts...
+
+Processing District 1 ( Aveiro )...
+  Fitting auto.ingarch (stepwise= FALSE , ic= aic , max.order= 14 )...
+  Model fitted successfully: p=4, q=4, Selected IC (aic)=6100.08, Models evaluated=64
+Completed District 1 with status: Success 
+
+Processing District 2 ( Beja )...
+  Fitting auto.ingarch (stepwise= FALSE , ic= aic , max.order= 14 )...
+  Model fitted successfully: p=5, q=1, Selected IC (aic)=3755.36, Models evaluated=64
+Completed District 2 with status: Success 
+
+Processing District 3 ( Braga )...
+  Fitting auto.ingarch (stepwise= FALSE , ic= aic , max.order= 14 )...
+  Model fitted successfully: p=7, q=1, Selected IC (aic)=6735.58, Models evaluated=64
+Completed District 3 with status: Success 
+
+Processing District 4 ( Bragança )...
+  Fitting auto.ingarch (stepwise= FALSE , ic= aic , max.order= 14 )...
+  Model fitted successfully: p=7, q=7, Selected IC (aic)=4596.32, Models evaluated=64
+Completed District 4 with status: Success 
+
+Processing District 5 ( Castelo Branco )...
+  Fitting auto.ingarch (stepwise= FALSE , ic= aic , max.order= 14 )...
+  Model fitted successfully: p=5, q=7, Selected IC (aic)=4646.77, Models evaluated=64
+Completed District 5 with status: Success 
+
+Processing District 6 ( Coimbra )...
+  Fitting auto.ingarch (stepwise= FALSE , ic= aic , max.order= 14 )...
+  Model fitted successfully: p=7, q=6, Selected IC (aic)=5543.62, Models evaluated=64
+Completed District 6 with status: Success 
+
+Processing District 7 ( Évora )...
+  Fitting auto.ingarch (stepwise= FALSE , ic= aic , max.order= 14 )...
+  Model fitted successfully: p=7, q=7, Selected IC (aic)=4323.17, Models evaluated=64
+Completed District 7 with status: Success 
+
+Processing District 8 ( Faro )...
+  Fitting auto.ingarch (stepwise= FALSE , ic= aic , max.order= 14 )...
+  Model fitted successfully: p=6, q=7, Selected IC (aic)=4938.8, Models evaluated=64
+Completed District 8 with status: Success 
+
+Processing District 9 ( Guarda )...
+  Fitting auto.ingarch (stepwise= FALSE , ic= aic , max.order= 14 )...
+  Model fitted successfully: p=7, q=6, Selected IC (aic)=4591.95, Models evaluated=64
+Completed District 9 with status: Success 
+
+Processing District 10 ( Leiria )...
+  Fitting auto.ingarch (stepwise= FALSE , ic= aic , max.order= 14 )...
+  Model fitted successfully: p=7, q=7, Selected IC (aic)=6152.23, Models evaluated=64
+Completed District 10 with status: Success 
+
+Processing District 11 ( Lisboa )...
+  Fitting auto.ingarch (stepwise= FALSE , ic= aic , max.order= 14 )...
+  Model fitted successfully: p=5, q=6, Selected IC (aic)=7937.83, Models evaluated=64
+Completed District 11 with status: Success 
+
+Processing District 12 ( Portalegre )...
+  Fitting auto.ingarch (stepwise= FALSE , ic= aic , max.order= 14 )...
+  Model fitted successfully: p=2, q=1, Selected IC (aic)=3740.12, Models evaluated=64
+Completed District 12 with status: Success 
+
+Processing District 13 ( Porto )...
+  Fitting auto.ingarch (stepwise= FALSE , ic= aic , max.order= 14 )...
+  Model fitted successfully: p=1, q=6, Selected IC (aic)=7161.58, Models evaluated=64
+Completed District 13 with status: Success 
+
+Processing District 14 ( Santarém )...
+  Fitting auto.ingarch (stepwise= FALSE , ic= aic , max.order= 14 )...
+  Model fitted successfully: p=6, q=6, Selected IC (aic)=5871.65, Models evaluated=64
+Completed District 14 with status: Success 
+
+Processing District 15 ( Setúbal )...
+  Fitting auto.ingarch (stepwise= FALSE , ic= aic , max.order= 14 )...
+  Model fitted successfully: p=3, q=7, Selected IC (aic)=6230.63, Models evaluated=64
+Completed District 15 with status: Success 
+
+Processing District 16 ( Viana do Castelo )...
+  Fitting auto.ingarch (stepwise= FALSE , ic= aic , max.order= 14 )...
+  Model fitted successfully: p=1, q=7, Selected IC (aic)=4595.25, Models evaluated=64
+Completed District 16 with status: Success 
+
+Processing District 17 ( Vila Real )...
+  Fitting auto.ingarch (stepwise= FALSE , ic= aic , max.order= 14 )...
+  Model fitted successfully: p=6, q=7, Selected IC (aic)=5359.39, Models evaluated=64
+Completed District 17 with status: Success 
+
+Processing District 18 ( Viseu )...
+  Fitting auto.ingarch (stepwise= FALSE , ic= aic , max.order= 14 )...
+  Model fitted successfully: p=1, q=3, Selected IC (aic)=5593.38, Models evaluated=64
+Completed District 18 with status: Success 
+
+Processing results...
+Saving detailed results to: ./real_data_application_gs 
+Detailed results saved to CSV: ./real_data_application_gs/district_fitting_detailed_results_gridsearch.csv 
+
+===== Fitting Summary (Grid Search, IC= aic ) =====
+ district_code district_name p q aic_value time_secs  status mean.Temp.Lag5
+             1        Aveiro 4 4  6100.076  1106.393 Success    -0.01146612
+             2          Beja 5 1  3755.357  1076.047 Success             NA
+ mean.DTemp.Lag0   PM25.Lag0 mean.NO2.Lag2
+      0.01173341 0.004655533   -0.01351871
+              NA 0.010362466   -0.04325788
+ [ reached 'max' / getOption("max.print") -- omitted 16 rows ]
+
+===== Status Summary =====
+# A tibble: 1 × 2
+  status  count
+  <chr>   <int>
+1 Success    18
+
+--- Script finished --- 
+Total run time: 11.30554 hours hours 
+[1] "completed"
+------------ ------------
+End Time: 2025-05-17 04:16:21 WEST

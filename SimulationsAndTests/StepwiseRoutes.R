@@ -120,7 +120,7 @@ for (i in 1:num_simulations_to_process) {
       xreg = NULL,
       trace = FALSE,          # As per your original request
       show_warnings = FALSE,  # As per your original request
-      ic = "aicc"             # Default from auto.ingarch, can be changed
+      ic = "aic"             # Default from auto.ingarch, can be changed
     )
   }, error = function(e) {
     # This catches errors from the auto.ingarch call itself (e.g., if auto.ingarch stops due to invalid data)
