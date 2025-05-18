@@ -4,7 +4,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
-import pyreadr # For reading .rds files
+try:
+    import pyreadr # For reading .rds files
+except ImportError:
+    print("Warning: pyreadr library not found. RDS file support will be unavailable.")
+    print("Please install it with 'pip install pyreadr' if you need to read .rds files.")
+    pyreadr = None # Set to None if not found
 import traceback
 
 # %% Plotting Function (AIC Difference Boxplots)
@@ -12,18 +17,18 @@ def create_aic_difference_boxplots(filepath,
                                    case_label,
                                    true_p_order,
                                    true_q_order,
-                                   output_dir="ingarch_order_differences_boxplots", # Reverted to original default
+                                   output_dir="ingarch_order_differences_boxplots",
                                    method_rename_map=None,
                                    custom_palette=None):
     """
     Creates and saves box plots of the AIC difference between models with true orders (p,q)
-    and other models, from an .rds file.
+    and other models, from an .rds or .csv file.
     The reference AIC for true orders is calculated as the mean AIC for models
     with (true_p_order, true_q_order) within each estimation method.
     Differences are AIC(true_order_model_mean) - AIC(other_model).
 
     Args:
-        filepath (str): The path to the .rds file.
+        filepath (str): The path to the .rds or .csv file.
         case_label (str): Label for the dataset (e.g., "No Covariates"). Used in title/filename.
         true_p_order (int): The true order p, used to identify reference models.
         true_q_order (int): The true order q, used to identify reference models.
@@ -42,54 +47,77 @@ def create_aic_difference_boxplots(filepath,
         print(f"Error: File not found at '{filepath}'. Please check the path.")
         return
 
+    df = None
+    file_extension = os.path.splitext(filepath)[1].lower()
+    print(f"Attempting to read file: {filepath} (type: {file_extension})")
+
     try:
-        print(f"Attempting to read RDS file: {filepath}")
-        try:
-            rds_data = pyreadr.read_r(filepath)
-        except Exception as read_error:
-            print(f"Error reading RDS file '{filepath}' with pyreadr: {read_error}")
-            print("Ensure 'pyreadr' is installed (pip install pyreadr) and the file path is correct.")
-            print("If R is not installed or not found by pyreadr, you might need to install R and add it to your system's PATH.")
+        if file_extension == '.rds':
+            if pyreadr is None:
+                print("Error: pyreadr library is required to read .rds files but it's not installed or failed to import.")
+                return
+            try:
+                rds_data = pyreadr.read_r(filepath)
+                if not rds_data:
+                    print(f"Error: RDS file '{filepath}' is empty or pyreadr could not extract any R objects.")
+                    return
+                df_key = list(rds_data.keys())[0] # Assume the first object is the dataframe
+                df = rds_data[df_key]
+                print(f"Successfully read object '{df_key}' from RDS file: {os.path.basename(filepath)} with {df.shape[0]} rows and {df.shape[1]} columns.")
+            except Exception as read_error:
+                print(f"Error reading RDS file '{filepath}' with pyreadr: {read_error}")
+                print("Ensure 'pyreadr' is installed and R is configured if needed.")
+                return
+        elif file_extension == '.csv':
+            try:
+                df = pd.read_csv(filepath)
+                print(f"Successfully read CSV file: {os.path.basename(filepath)} with {df.shape[0]} rows and {df.shape[1]} columns.")
+            except Exception as read_error:
+                print(f"Error reading CSV file '{filepath}': {read_error}")
+                return
+        else:
+            print(f"Error: Unsupported file type '{file_extension}'. Please use .rds or .csv files.")
             return
 
-        if not rds_data:
-            print(f"Error: RDS file '{filepath}' is empty or pyreadr could not extract any R objects.")
+        if df is None or df.empty:
+            print(f"Error: No data loaded from file '{filepath}'. The DataFrame is empty.")
             return
-
-        df_key = list(rds_data.keys())[0]
-        df = rds_data[df_key]
-        print(f"Successfully read object '{df_key}' from RDS file: {os.path.basename(filepath)} with {df.shape[0]} rows and {df.shape[1]} columns.")
 
         # --- Column Name Handling (Focus on method, p, q, aic) ---
-        expected_cols_map = {
-            'method': ['method', 'Method'],
-            'p': ['p', 'P'],
-            'q': ['q', 'Q'],
-            'aic': ['aic', 'AIC', 'aic_value', 'aicvalue'] # Added AIC variants
+        # Standardized internal column names
+        standard_names = {'method': 'method', 'p': 'p', 'q': 'q', 'aic': 'aic'}
+        # Map of possible file column names (lowercase) to standard names
+        possible_col_names_map = {
+            'method': standard_names['method'], 'Method': standard_names['method'],
+            'p': standard_names['p'], 'P': standard_names['p'],
+            'q': standard_names['q'], 'Q': standard_names['q'],
+            'aic': standard_names['aic'], 'AIC': standard_names['aic'],
+            'aic_value': standard_names['aic'], 'aicvalue': standard_names['aic']
         }
-        rename_operation_map = {}
-        current_columns_in_df = df.columns.tolist()
+        
+        rename_map = {}
+        current_columns_lower = {col.lower(): col for col in df.columns} # map lowercase to original case
 
-        for standard_col_name, possible_file_names in expected_cols_map.items():
-            found_column_in_file = False
-            for file_col_name_variant in possible_file_names:
-                matching_df_cols = [col_in_df for col_in_df in current_columns_in_df if col_in_df.lower() == file_col_name_variant.lower()]
-                if matching_df_cols:
-                    actual_col_name_in_df = matching_df_cols[0]
-                    if actual_col_name_in_df != standard_col_name:
-                        if actual_col_name_in_df not in rename_operation_map and standard_col_name not in current_columns_in_df :
-                            rename_operation_map[actual_col_name_in_df] = standard_col_name
-                    found_column_in_file = True
-                    break
-            if not found_column_in_file:
-                print(f"Error: Required column for '{standard_col_name}' (e.g., {possible_file_names}) not found in RDS object '{df_key}'.")
-                print(f"  Available columns in RDS object: {current_columns_in_df}")
+        for standard_name in standard_names.values():
+            found = False
+            for possible_name_variant_lower, mapped_standard_name in possible_col_names_map.items():
+                if mapped_standard_name == standard_name: # Ensure we are checking variants for the current standard_name
+                    if possible_name_variant_lower in current_columns_lower:
+                        original_case_col_name = current_columns_lower[possible_name_variant_lower]
+                        if original_case_col_name != standard_name: # If original name is different from standard
+                            rename_map[original_case_col_name] = standard_name
+                        found = True
+                        break # Found a variant for this standard_name
+            if not found and standard_name not in df.columns: # If no variant was found and standard_name itself is not present
+                print(f"Error: Required column for '{standard_name}' (e.g., { [k for k,v in possible_col_names_map.items() if v == standard_name] }) not found in file '{os.path.basename(filepath)}'.")
+                print(f"  Available columns: {df.columns.tolist()}")
                 return
-
-        df.rename(columns=rename_operation_map, inplace=True)
+        
+        df.rename(columns=rename_map, inplace=True)
         print(f"Columns after attempting initial standardization: {df.columns.tolist()}")
 
-        required_standard_cols = ['method', 'p', 'q', 'aic']
+
+        required_standard_cols = list(standard_names.values())
         for req_col in required_standard_cols:
             if req_col not in df.columns:
                 print(f"Error: Standardized column '{req_col}' is missing after renaming attempts.")
@@ -141,9 +169,6 @@ def create_aic_difference_boxplots(filepath,
 
             if other_models_for_method.empty:
                 print(f"Info: No 'other' models (P,Q different from ({true_p_order},{true_q_order})) to compare against for method '{method_name}'.")
-                # If you want to plot methods that ONLY have reference models, you might add placeholder differences (e.g., zero)
-                # or ensure the plotting logic can handle cases where a category in 'plot_df' might be empty or have specific values.
-                # For now, we stick to only adding rows if 'other_models_for_method' exist to calculate differences.
                 continue
 
 
@@ -158,14 +183,12 @@ def create_aic_difference_boxplots(filepath,
 
         if not plot_data_rows:
             print(f"Warning: No data available for plotting AIC differences for file '{filepath}'.")
-            # This could happen if all methods were skipped, or no 'other' models were found.
             return
 
         plot_df = pd.DataFrame(plot_data_rows)
-        # Ensure plot_order uses only methods that are actually in plot_df after processing
         plot_order = sorted(plot_df['display_method'].unique())
 
-        if not plot_order: # Double check if plot_df ended up empty or without valid methods
+        if not plot_order:
             print(f"Warning: No methods have data for AIC difference plotting after processing '{filepath}'. Skipping plot generation.")
             return
 
@@ -183,7 +206,7 @@ def create_aic_difference_boxplots(filepath,
             }
             active_palette = {k: v for k, v in default_internal_palette.items() if k in plot_order}
             print("Using default internal palette for original method names, filtered for methods present in plot.")
-            if len(active_palette) < len(plot_order) and plot_order: # Check plot_order is not empty
+            if len(active_palette) < len(plot_order) and plot_order:
                 print("  Not all methods in the plot have a color in default_internal_palette. Seaborn will use default colors for missing ones.")
         else:
              print("Methods renamed, but no custom_palette provided. Seaborn will assign default colors for all methods.")
@@ -194,7 +217,7 @@ def create_aic_difference_boxplots(filepath,
             active_palette = None
 
 
-        fig_width = max(8, len(plot_order) * 1.2 if len(plot_order) > 1 else 8) # Ensure min width even for one box
+        fig_width = max(8, len(plot_order) * 1.2 if len(plot_order) > 1 else 8)
         plt.figure(figsize=(fig_width, 7))
 
         ax = sns.boxplot(x='display_method', y='aic_difference', hue='display_method',
@@ -203,16 +226,11 @@ def create_aic_difference_boxplots(filepath,
 
 
         # --- Start of modifications for average dot and text ---
-        for i, method_name_in_plot in enumerate(plot_order): # Iterate using the actual order of boxes
-            # Filter data for the current box being plotted
+        for i, method_name_in_plot in enumerate(plot_order):
             method_data = plot_df[plot_df['display_method'] == method_name_in_plot]['aic_difference']
             if not method_data.empty:
                 mean_val = method_data.mean()
-                # Plot the mean as a red dot
-                # The x-coordinate for plot() within a boxplot context is the categorical index (0, 1, 2...)
-                ax.plot(i, mean_val, 'ro', markersize=8, zorder=5) # 'ro' is red circle. zorder to be on top.
-                # Add text for the mean value
-                # Adjust text position slightly for better visibility (e.g., offset from the dot)
+                ax.plot(i, mean_val, 'ro', markersize=8, zorder=5)
                 ax.text(i + 0.05, mean_val, f'{mean_val:.2f}', color='red',
                         ha='left', va='center', fontsize=9, fontweight='bold')
         # --- End of modifications ---
@@ -222,16 +240,12 @@ def create_aic_difference_boxplots(filepath,
         plt.ylabel(f'AIC(P={true_p_order},Q={true_q_order}) - AIC(Other Model)', fontsize=12)
         plt.axhline(0, color='grey', linestyle='--', linewidth=0.8)
 
-        # Legend handling: Since hue=x, a default legend might be redundant or show multiple entries for colors.
-        # We can create a custom legend if needed, or rely on x-axis labels if colors are distinct per box.
-        # If custom_palette is provided and maps to display_method, it should color boxes accordingly.
-        # If legend=False was set in sns.boxplot, this part might be optional or need specific handles.
-        if active_palette : # Only add legend if a palette was used that might need explaining
+        if active_palette :
             handles = [plt.Rectangle((0,0),1,1, color=active_palette.get(label, 'gray')) for label in plot_order if label in active_palette]
             labels = [label for label in plot_order if label in active_palette]
-            if handles: # ensure there are handles to create a legend
+            if handles:
                  ax.legend(handles, labels, title='Method', loc='upper right')
-        elif ax.get_legend() is not None: # Fallback if sns created one
+        elif ax.get_legend() is not None: # Fallback if sns created one but we turned legend off
             ax.legend(title='Method', loc='upper right')
 
 
@@ -242,7 +256,11 @@ def create_aic_difference_boxplots(filepath,
             plt.xticks(rotation=0)
         plt.tight_layout()
 
-        filename = f"aic_differences_{case_label.replace(' ', '_').lower()}_p{true_p_order}q{true_q_order}.rds_based.png"
+        file_basename = os.path.basename(filepath)
+        filename_prefix = os.path.splitext(file_basename)[0] # Get filename without extension
+        # Sanitize case_label for filename
+        safe_case_label = "".join(c if c.isalnum() or c in (' ', '_') else '_' for c in case_label).replace(' ', '_')
+        filename = f"aic_differences_{filename_prefix}_{safe_case_label.lower()}_p{true_p_order}q{true_q_order}.png"
         save_path = os.path.join(output_dir, filename)
         plt.savefig(save_path, dpi=300)
         plt.close()
@@ -253,64 +271,76 @@ def create_aic_difference_boxplots(filepath,
         print(traceback.format_exc())
 
 # %% --- Example Usage ---
-# IMPORTANT: Remember to install pyreadr: pip install pyreadr pandas matplotlib seaborn
+# IMPORTANT: Remember to install pyreadr (pip install pyreadr) if you need to process .rds files.
+# Pandas, Matplotlib, Seaborn are also required.
 
-# --- Define your .rds file paths here ---
-# Please ensure these paths are correct on your system.
-# For demonstration, I'll use placeholder names. Replace with your actual paths.
-path_to_rds_no_covariates = r'C:\Users\Rafael\Desktop\msc-thesis\results\simulatedDataResults\ingarch_no_covariates_results.rds'
-path_to_rds_with_covariates = r'C:\Users\Rafael\Desktop\msc-thesis\results\simulatedDataResults\ingarch_with_covariates_results.rds'
+# --- Define the file paths you want to process ---
+# List your file paths here. The script will determine the type (CSV or RDS).
+# For example:
+# file_paths_to_process = [
+# r"C:\Users\Rafael\Desktop\msc-thesis\results\simulatedDataResults\ingarch_no_covariates_results.rds",
+# r"C:\Users\Rafael\Desktop\msc-thesis\results\simulatedDataResults\ingarch_with_covariates_results.csv",
+#     # Add more file paths if needed
+# ]
+# For testing, let's assume you have these files (replace with your actual paths):
+file_paths_to_process = [
+    r'C:\Users\Rafael\Desktop\msc-thesis\old\results\simulatedDataResults\ingarch_no_covariates_results.rds',
+    r'C:\Users\Rafael\Desktop\msc-thesis\old\results\simulatedDataResults\ingarch_with_covariates_results.rds'
+]
 
+# --- Define Case Labels for each file (for plot titles and filenames) ---
+# Ensure this list has the same number of elements as file_paths_to_process
+# These labels help distinguish the plots if you process multiple files.
+case_labels_for_files = [
+    "No Covariates Data",   # Label for the first file in file_paths_to_process
+    "With Covariates Data"  # Label for the second file
+]
 
-# --- Define Output Directory for AIC Difference Boxplots ---
-plot_output_directory = "ingarch_order_differences_boxplots_with_avg"
-
-# --- Define True Model Orders (P and Q for reference AIC calculation) ---
-TRUE_P_FOR_REF_AIC = 2
-TRUE_Q_FOR_REF_AIC = 6
-
-# --- Define Custom Method Names and Palettes (Optional) ---
-user_defined_method_names = {
-    "stepwise": "Stepwise",
-    "grid_search": "Grid Search"
-}
-
-user_defined_palette = {
-    "Stepwise": "mediumseagreen",
-    "Grid Search": "#377E7F"
-}
-
-
-print("--- Generating AIC Difference Boxplots from .rds files ---")
-
-# Check if files exist before attempting to process
-# (This is good practice but the function itself also checks)
-
-print(f"\nProcessing 'No Covariates' data from: {path_to_rds_no_covariates}")
-if os.path.exists(path_to_rds_no_covariates):
-    create_aic_difference_boxplots(filepath=path_to_rds_no_covariates,
-                                   case_label="No Covariates Data",
-                                   true_p_order=TRUE_P_FOR_REF_AIC,
-                                   true_q_order=TRUE_Q_FOR_REF_AIC,
-                                   output_dir=plot_output_directory,
-                                   method_rename_map=user_defined_method_names,
-                                   custom_palette=user_defined_palette)
+if len(file_paths_to_process) != len(case_labels_for_files):
+    print("Error: The number of file paths and case labels must match.")
+    print(f"  Number of file paths: {len(file_paths_to_process)}")
+    print(f"  Number of case labels: {len(case_labels_for_files)}")
+    # Exit or handle this error as appropriate for your workflow
 else:
-    print(f"File not found: {path_to_rds_no_covariates}")
-    print(f"Please update 'path_to_rds_no_covariates' with the correct file path.")
+    # --- Define Output Directory for AIC Difference Boxplots ---
+    plot_output_directory = "ingarch_aic_difference_boxplots"
 
-print(f"\nProcessing 'With Covariates' data from: {path_to_rds_with_covariates}")
-if os.path.exists(path_to_rds_with_covariates):
-    create_aic_difference_boxplots(filepath=path_to_rds_with_covariates,
-                                   case_label="With Covariates Data",
-                                   true_p_order=TRUE_P_FOR_REF_AIC,
-                                   true_q_order=TRUE_Q_FOR_REF_AIC,
-                                   output_dir=plot_output_directory,
-                                   method_rename_map=user_defined_method_names,
-                                   custom_palette=user_defined_palette)
-else:
-    print(f"File not found: {path_to_rds_with_covariates}")
-    print(f"Please update 'path_to_rds_with_covariates' with the correct file path.")
+    # --- Define True Model Orders (P and Q for reference AIC calculation) ---
+    # These will be used for all files processed in this run.
+    # If different files need different true orders, you might need to adjust the loop.
+    TRUE_P_FOR_REF_AIC = 2
+    TRUE_Q_FOR_REF_AIC = 6
 
-print("\nAIC difference boxplot generation complete.")
-print(f"Check the '{plot_output_directory}' directory for the plots if processing was successful.")
+    # --- Define Custom Method Names and Palettes (Optional) ---
+    # These will be applied to all plots generated.
+    user_defined_method_names = {
+        "stepwise": "Stepwise",
+        "grid_search": "Grid Search"
+        # Add other original method names from your data if they exist and need renaming
+    }
+    user_defined_palette = {
+        "Stepwise": "mediumseagreen",
+        "Grid Search": "#377E7F"
+        # Add colors for other display_method names if they exist
+    }
+
+    print("--- Generating AIC Difference Boxplots from data files ---")
+
+    for i, file_path in enumerate(file_paths_to_process):
+        current_case_label = case_labels_for_files[i]
+        print(f"\nProcessing file: {file_path} with case label: '{current_case_label}'")
+        
+        if os.path.exists(file_path):
+            create_aic_difference_boxplots(filepath=file_path,
+                                           case_label=current_case_label,
+                                           true_p_order=TRUE_P_FOR_REF_AIC,
+                                           true_q_order=TRUE_Q_FOR_REF_AIC,
+                                           output_dir=plot_output_directory,
+                                           method_rename_map=user_defined_method_names,
+                                           custom_palette=user_defined_palette)
+        else:
+            print(f"File not found: {file_path}")
+            print(f"  Please update 'file_paths_to_process' with the correct file path(s).")
+
+    print("\n--- AIC difference boxplot generation process complete. ---")
+    print(f"Check the '{plot_output_directory}' directory for the plots if processing was successful.")
