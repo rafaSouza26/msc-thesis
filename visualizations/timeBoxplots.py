@@ -156,11 +156,11 @@ def create_time_boxplots(filepath,
                 
                 # Add text label at bottom left of each box plot
                 # Get the y-min for this group's data
-                min_y = df[df['display_method'] == method]['time'].min()
+                #min_y = df[df['display_method'] == method]['time'].min()
                 # Position text at the bottom left of the box
-                ax.text(i - 0.4, min_y - (df['time'].max() - df['time'].min()) * 0.08,
-                        f'Mean: {mean_time:.2f}', 
-                        ha='left', va='top', fontsize=9, color='red')
+                #ax.text(i - 0.4, min_y - (df['time'].max() - df['time'].min()) * 0.08,
+                #        f'Mean: {mean_time:.2f}', 
+                #        ha='left', va='top', fontsize=9, color='red')
         else:
             # If using default order
             for i, method in enumerate(df['display_method'].unique()):
@@ -169,11 +169,11 @@ def create_time_boxplots(filepath,
                 
                 # Add text label at bottom left of each box plot
                 # Get the y-min for this group's data
-                min_y = df[df['display_method'] == method]['time'].min()
+                #min_y = df[df['display_method'] == method]['time'].min()
                 # Position text at the bottom left of the box
-                ax.text(i - 0.4, min_y - (df['time'].max() - df['time'].min()) * 0.08,
-                        f'Mean: {mean_time:.2f}', 
-                        ha='left', va='top', fontsize=9, color='red')
+                #ax.text(i - 0.4, min_y - (df['time'].max() - df['time'].min()) * 0.08,
+                #        f'Mean: {mean_time:.2f}', 
+                #        ha='left', va='top', fontsize=9, color='red')
         
         plt.title(f'Comparison of Execution Times\n{case_label}', fontsize=14)
         plt.xlabel('Search Method', fontsize=12)
@@ -196,11 +196,11 @@ def create_time_boxplots(filepath,
 # IMPORTANT: Remember to install pyreadr: pip install pyreadr
 
 # --- Define your .rds file paths here ---
-path_to_rds_no_covariates = r'C:\Users\Rafael\Desktop\msc-thesis\results\simulatedDataResults\ingarch_no_covariates_results.rds' 
-path_to_rds_with_covariates = r'C:\Users\Rafael\Desktop\msc-thesis\results\simulatedDataResults\ingarch_with_covariates_results.rds' 
+path_to_rds_no_covariates = r'C:\Users\Rafael\Desktop\msc-thesis\old\results\simulatedDataResults\ingarch_no_covariates_results.rds' 
+path_to_rds_with_covariates = r'C:\Users\Rafael\Desktop\msc-thesis\old\results\simulatedDataResults\ingarch_with_covariates_results.rds' 
 
 # --- Define Output Directory for Time Boxplots ---
-time_plot_output_directory = "ingarch_execution_times_boxplots" 
+time_plot_output_directory = "ingarch_execution_times_boxplots_just_dot" 
 
 # --- Define Custom Method Names and Palettes (Optional) ---
 # These will be used for the x-axis labels and box colors

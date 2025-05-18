@@ -231,8 +231,8 @@ def create_aic_difference_boxplots(filepath,
             if not method_data.empty:
                 mean_val = method_data.mean()
                 ax.plot(i, mean_val, 'ro', markersize=8, zorder=5)
-                ax.text(i + 0.05, mean_val, f'{mean_val:.2f}', color='red',
-                        ha='left', va='center', fontsize=9, fontweight='bold')
+                # ax.text(i + 0.05, mean_val, f'{mean_val:.2f}', color='red',
+                #        ha='left', va='center', fontsize=9, fontweight='bold')
         # --- End of modifications ---
 
         plt.title(f'AIC Difference relative to Model (P={true_p_order}, Q={true_q_order})\n{case_label}', fontsize=14)
