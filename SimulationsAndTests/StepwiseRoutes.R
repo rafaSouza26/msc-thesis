@@ -22,11 +22,11 @@ cat("The 'custom' folder is expected to be at:", file.path(current_wd, "custom")
 # Files to source. Paths are relative to the current working directory.
 # Order matters for dependencies.
 custom_files_to_source <- c(
-  "./custom/myingarch.R",      # Dependency for search.ingarch.R
-  "./custom/newmodel.R",       # Dependency for auto.ingarch.R
-  "./custom/ingarch.string.R", # Dependency for auto.ingarch.R
-  "./custom/search.ingarch.R", # Dependency for auto.ingarch.R, sources myingarch.R internally
-  "./custom/auto.ingarch.R"    # Main function we'll be calling, sources its dependencies
+  "./ACTS/myingarch.R",      # Dependency for search.ingarch.R
+  "./ACTS/newmodel.R",       # Dependency for auto.ingarch.R
+  "./ACTS/ingarch.string.R", # Dependency for auto.ingarch.R
+  "./ACTS/search.ingarch.R", # Dependency for auto.ingarch.R, sources myingarch.R internally
+  "./ACTS/auto.ingarch.R"    # Main function we'll be calling, sources its dependencies
 )
 
 cat("Sourcing custom functions using paths relative to current WD:\n")
@@ -38,7 +38,7 @@ for (path_to_script in custom_files_to_source) {
   }
   cat("  Sourcing:", path_to_script, "\n")
   tryCatch({
-    source(path_to_script) # e.g., source("./custom/myingarch.R")
+    source(path_to_script) # e.g., source("./ACTS/myingarch.R")
   }, error = function(e) {
     stop(paste("Error sourcing '", path_to_script, "': ", e$message, sep=""))
   })

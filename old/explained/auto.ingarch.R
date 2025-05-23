@@ -1,7 +1,7 @@
 # Load required custom functions and libraries
-source("./custom/myingarch.R")
-source("./custom/ingarch.string.R")
-source("./custom/newmodel.R")
+source("./ACTS/myingarch.R")
+source("./ACTS/ingarch.string.R")
+source("./ACTS/newmodel.R")
 library(tscount)
 library(forecast)
 

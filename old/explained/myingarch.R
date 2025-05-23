@@ -1,5 +1,5 @@
 # Load required helper function for INGARCH model string representation
-source("./custom/ingarch.string.R")
+source("./ACTS/ingarch.string.R")
 
 #' Fit an Integer-valued GARCH (INGARCH) Model
 #' This function fits an INGARCH model to count time series data using the tscount package.

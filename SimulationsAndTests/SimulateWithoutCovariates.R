@@ -9,11 +9,11 @@ library(readxl)
 
 # Source custom functions
 # Ensure these paths are correct relative to your script's location
-source("./custom/auto.ingarch.R")
-source("./custom/ingarch.sim.R")
-source("./custom/newmodel.R")
-source("./custom/ingarch.string.R")
-source("./custom/search.ingarch.R")
+source("./ACTS/auto.ingarch.R")
+source("./ACTS/ingarch.sim.R")
+source("./ACTS/newmodel.R")
+source("./ACTS/ingarch.string.R")
+source("./ACTS/search.ingarch.R")
 
 # Function to extract model parameters from Excel file
 extract_model_params <- function(data_path, model_row = 1) {

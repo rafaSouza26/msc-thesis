@@ -4,9 +4,9 @@ library(tscount)
 # Load our custom functions
 # Ensure these file paths are correct relative to your working directory
 # If they are in a subdirectory named "custom":
-source("./custom/ingarch.sim.R")
-source("./custom/myingarch.R")
-source("./custom/auto.ingarch.R")
+source("./ACTS/ingarch.sim.R")
+source("./ACTS/myingarch.R")
+source("./ACTS/auto.ingarch.R")
 
 
 # Set a random seed for reproducibility

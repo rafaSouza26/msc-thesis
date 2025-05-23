@@ -1,4 +1,4 @@
-source("./custom/myingarch.R") # Ensure this path is correct
+source("./ACTS/myingarch.R") # Ensure this path is correct
 
 search.ingarch <- function(x,
                            max.p = 3,                     # Maximum AR order

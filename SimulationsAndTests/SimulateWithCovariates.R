@@ -11,12 +11,12 @@ library(foreach)    # Still needed for parallel execution
 # Removed: library(progressr)
 
 # Source custom functions
-source("./custom/auto.ingarch.R")
-source("./custom/ingarch.sim.R")
-source("./custom/newmodel.R")
-source("./custom/ingarch.string.R")
-source("./custom/search.ingarch.R")
-source("./custom/myingarch.R")
+source("./ACTS/auto.ingarch.R")
+source("./ACTS/ingarch.sim.R")
+source("./ACTS/newmodel.R")
+source("./ACTS/ingarch.string.R")
+source("./ACTS/search.ingarch.R")
+source("./ACTS/myingarch.R")
 
 # Helper function to define a template for storing detailed results
 define_results_template_with_cov <- function(max_p_cols, max_q_cols, xreg_col_names) {

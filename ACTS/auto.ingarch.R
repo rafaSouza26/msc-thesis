@@ -1,6 +1,6 @@
-source("./custom/newmodel.R")      # Ensure this path is correct
-source("./custom/ingarch.string.R") # Ensure this path is correct
-source("./custom/search.ingarch.R") # Ensure this path is correct
+source("./ACTS/newmodel.R")      # Ensure this path is correct
+source("./ACTS/ingarch.string.R") # Ensure this path is correct
+source("./ACTS/search.ingarch.R") # Ensure this path is correct
 
 auto.ingarch <- function(y,
                          max.p = 7,
