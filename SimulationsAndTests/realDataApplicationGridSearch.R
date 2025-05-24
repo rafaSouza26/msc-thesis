@@ -27,7 +27,7 @@ DISTRIBUTION <- "nbinom"
 LINK <- "log"
 IC <- "aic" # Ensure AIC is used
 STEPWISE <- FALSE # Changed for Grid Search
-MAX_ORDER_GRID_SEARCH <- 2 #MAX_P + MAX_Q # Max sum of p and q for grid search
+MAX_ORDER_GRID_SEARCH <- MAX_P + MAX_Q # Max sum of p and q for grid search
 TRACE <- FALSE
 SHOW_WARNINGS <- FALSE
 
@@ -47,7 +47,7 @@ if (!dir.exists(OUTPUT_DIR)) {
 DETAILED_RESULTS_CSV_FILE <- file.path(OUTPUT_DIR, "district_fitting_detailed_results_gridsearch.csv")
 
 
-NUM_DISTRICTS_TO_PROCESS <- 3
+NUM_DISTRICTS_TO_PROCESS <- 18
 ALL_DISTRICT_CODES_AVAILABLE <- 1:18
 
 if (NUM_DISTRICTS_TO_PROCESS > length(ALL_DISTRICT_CODES_AVAILABLE)) {
