@@ -167,9 +167,9 @@ def process_and_plot(filepath, case_label, output_dir="ingarch_heatmaps"):
 
         # --- Column Name Handling ---
         expected_cols = {'method': ['method', 'Method'],
-                         'p': ['p', 'P'],
-                         'q': ['q', 'Q'],
-                         'count': ['count', 'Count', 'Freq', 'Frequency']}
+                         'p': ['p', 'P', 'p_order'],
+                         'q': ['q', 'Q', 'q_order'],
+                         'count': ['count', 'Count', 'Freq', 'Frequency', 'freq']}
         rename_map = {}
         found_cols = {}
 
@@ -305,8 +305,8 @@ def process_and_plot(filepath, case_label, output_dir="ingarch_heatmaps"):
 # IMPORTANT: Replace these placeholder paths with the actual paths to your files!
 
 # --- Define your file paths here ---
-path_to_file_with_covariates = r'C:\Users\Rafael\Desktop\msc-thesis\results\simulatedDataResults\ingarch_with_covariates_order_freq.csv'
-path_to_file_no_covariates   = r'C:\Users\Rafael\Desktop\msc-thesis\results\simulatedDataResults\ingarch_no_covariates_order_freq.csv'
+path_to_file_no_covariates = r'C:\Users\Rafael\Desktop\msc-thesis\SimulationResults\ingarch_no_covariates_order_frequencies.csv'
+path_to_file_with_covariates = r'C:\Users\Rafael\Desktop\msc-thesis\SimulationResults\ingarch_with_covariates_order_frequencies.csv'
 
 # --- Define Output Directory ---
 plot_output_directory = "ingarch_order_heatmaps" # Define the folder name here (changed to distinguish)

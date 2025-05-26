@@ -1,23 +1,47 @@
 import pandas as pd
-import pyreadr
 import numpy as np
 import os
 
-def analyze_rds_file(input_file, output_file=None):
-    # Read the RDS file
-    print(f"Reading file: {input_file}")
-    result = pyreadr.read_r(input_file)
+def analyze_csv_file(input_file, output_file=None):
+    """
+    Reads a CSV file, calculates statistics for specified columns grouped by 'method',
+    and saves the results to a new CSV file.
+    """
+    # Read the CSV file
+    print(f"Reading CSV file: {input_file}")
+    try:
+        df = pd.read_csv(input_file)
+    except FileNotFoundError:
+        print(f"Error: The file '{input_file}' was not found.")
+        return None
+    except Exception as e:
+        print(f"Error reading CSV file '{input_file}': {e}")
+        return None
     
-    # RDS files are dictionaries with one key, get the dataframe
-    df = result[None]  # None is the key for the default dataframe
-    
+    if df.empty:
+        print(f"Warning: The CSV file '{input_file}' is empty or could not be read into a DataFrame.")
+        return None
+        
+    # Check for required columns for aggregation
+    required_cols_for_agg = ['method', 'p_order', 'q_order', 'time', 'n_models_tested']
+    missing_cols = [col for col in required_cols_for_agg if col not in df.columns]
+    if missing_cols:
+        print(f"Error: The CSV file '{input_file}' is missing the following required columns for analysis: {', '.join(missing_cols)}")
+        print(f"Available columns: {df.columns.tolist()}")
+        return None
+
     # Group by method and calculate statistics
-    stats = df.groupby('method').agg({
-        'p': ['mean', 'median', 'std'],
-        'q': ['mean', 'median', 'std'],
-        'time': ['mean', 'median', 'std'],
-        'n_models': ['mean', 'median', 'std']
-    }).reset_index()
+    print("Calculating statistics...")
+    try:
+        stats = df.groupby('method').agg({
+            'p_order': ['mean', 'median', 'std'],
+            'q_order': ['mean', 'median', 'std'],
+            'time': ['mean', 'median', 'std'],
+            'n_models_tested': ['mean', 'median', 'std']
+        }).reset_index()
+    except Exception as e:
+        print(f"Error during statistics calculation: {e}")
+        return None
     
     # Flatten the multi-level column names
     stats.columns = [
@@ -44,14 +68,33 @@ def analyze_rds_file(input_file, output_file=None):
     # If output file is not specified, create one based on the input filename
     if output_file is None:
         input_dir = os.path.dirname(input_file)
+        if not input_dir: # If input_file is just a filename without a path
+            input_dir = "." # Save in current directory
         input_filename = os.path.splitext(os.path.basename(input_file))[0]
         output_file = os.path.join(input_dir, f"{input_filename}_stats.csv")
     
+    # Ensure output directory exists
+    output_dir_path = os.path.dirname(output_file)
+    if output_dir_path and not os.path.exists(output_dir_path):
+        try:
+            os.makedirs(output_dir_path)
+            print(f"Created output directory: {output_dir_path}")
+        except Exception as e:
+            print(f"Error creating output directory '{output_dir_path}': {e}")
+            # Optionally, default to saving in the current directory or handle error
+            output_file = os.path.basename(output_file) # Save in CWD as fallback
+            print(f"Attempting to save in current directory as: {output_file}")
+
+
     # Save to CSV
     print(f"Saving results to: {output_file}")
-    stats.to_csv(output_file, index=False)
-    print("Analysis complete!")
-    
+    try:
+        stats.to_csv(output_file, index=False)
+        print("Analysis complete! 🎉")
+    except Exception as e:
+        print(f"Error saving results to '{output_file}': {e}")
+        return None
+        
     return stats
 
 if __name__ == "__main__":
@@ -59,21 +102,26 @@ if __name__ == "__main__":
     # EDIT THESE PATHS TO MATCH YOUR WINDOWS FOLDER AND FILE STRUCTURE
     # ====================================================================
     
-    # Input RDS file path - EDIT THIS LINE with your Windows path
-    input_file = r"C:\Users\Rafael\Desktop\msc-thesis\old\results\simulatedDataResults\ingarch_with_covariates_results.rds"
+    # Input CSV file path - EDIT THIS LINE with your Windows path
+    # Ensure this file has columns like 'method', 'p', 'q', 'time', 'n_models'
+    input_file = r"C:\Users\Rafael\Desktop\msc-thesis\SimulationResults\ingarch_with_covariates_results.csv" # EXAMPLE PATH
     
     # Output CSV file path - EDIT THIS LINE with your Windows path
     # If you want the output in the same folder as the input with an automatic name,
     # you can set this to None
-    output_file = r"C:\Users\Rafael\Desktop\msc-thesis\utils\with_covariates_stats.csv"
+    output_file = r"C:\Users\Rafael\Desktop\msc-thesis\utils\ingarch_with_covariates_stats.csv" # EXAMPLE PATH
+    # output_file = None # Uncomment this line to auto-generate output filename
     
     # ====================================================================
     # END OF PATH CONFIGURATION
     # ====================================================================
     
     # Process the file
-    result_stats = analyze_rds_file(input_file, output_file)
+    result_stats = analyze_csv_file(input_file, output_file)
     
-    # Display the first few rows of the results
-    print("\nResult Preview:")
-    print(result_stats.head())
+    # Display the first few rows of the results if successful
+    if result_stats is not None:
+        print("\nResult Preview:")
+        print(result_stats.head())
+    else:
+        print("\nAnalysis did not complete successfully.")
