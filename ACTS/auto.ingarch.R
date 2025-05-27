@@ -245,7 +245,6 @@ auto.ingarch <- function(y,                          # Input time series (count 
   warnings_captured <- character(0) # Temp store for warnings of current model
   bestfit <- withCallingHandlers({    # Fit model and capture warnings
     model_count <- model_count + 1 # Increment model counter
-    if (trace) cat(sprintf("\n%2d: Evaluating INGARCH(%d,%d)", model_count, p, q))
     myingarch(x, order = c(p, q), ic = ic, trace = trace, xreg = xreg, # Call internal fitting function
               distr = distribution_matched, link = link_matched, ...)
   }, warning = function(w) { # Warning handler
@@ -261,7 +260,6 @@ auto.ingarch <- function(y,                          # Input time series (count 
     warnings_captured <- character(0)
     fit <- withCallingHandlers({
       model_count <- model_count + 1
-      if (trace) cat(sprintf("\n%2d: Evaluating INGARCH(0,0)", model_count))
       myingarch(x, order = c(0, 0), ic = ic, trace = trace, xreg = xreg,
                 distr = distribution_matched, link = link_matched, ...)
     }, warning = function(w) {
@@ -279,7 +277,6 @@ auto.ingarch <- function(y,                          # Input time series (count 
       warnings_captured <- character(0)
       fit <- withCallingHandlers({
         model_count <- model_count + 1
-        if (trace) cat(sprintf("\n%2d: Evaluating INGARCH(1,0)", model_count))
         myingarch(x, order = c(1, 0), ic = ic, trace = trace, xreg = xreg,
                   distr = distribution_matched, link = link_matched, ...)
       }, warning = function(w) {
@@ -298,7 +295,6 @@ auto.ingarch <- function(y,                          # Input time series (count 
       warnings_captured <- character(0)
       fit <- withCallingHandlers({
         model_count <- model_count + 1
-        if (trace) cat(sprintf("\n%2d: Evaluating INGARCH(0,1)", model_count))
         myingarch(x, order = c(0, 1), ic = ic, trace = trace, xreg = xreg,
                   distr = distribution_matched, link = link_matched, ...)
       }, warning = function(w) {
@@ -317,7 +313,6 @@ auto.ingarch <- function(y,                          # Input time series (count 
       warnings_captured <- character(0)
       fit_11 <- withCallingHandlers({ # Use a distinct variable name for clarity
         model_count <- model_count + 1
-        if (trace) cat(sprintf("\n%2d: Evaluating INGARCH(1,1)", model_count))
         myingarch(x, order = c(1, 1), ic = ic, trace = trace, xreg = xreg,
                   distr = distribution_matched, link = link_matched, ...)
       }, warning = function(w) {
@@ -351,7 +346,6 @@ auto.ingarch <- function(y,                          # Input time series (count 
       warnings_captured <- character(0)
       fit <- withCallingHandlers({
         model_count <- model_count + 1 # Increment total models evaluated
-        if (trace) cat(sprintf("\n%2d: Evaluating INGARCH(%d,%d)", model_count, p - 1, q))
         myingarch(x, order = c(p - 1, q), ic = ic, trace = trace, xreg = xreg,
                   distr = distribution_matched, link = link_matched, ...)
       }, warning = function(w) {
@@ -369,7 +363,6 @@ auto.ingarch <- function(y,                          # Input time series (count 
       warnings_captured <- character(0)
       fit <- withCallingHandlers({
         model_count <- model_count + 1
-        if (trace) cat(sprintf("\n%2d: Evaluating INGARCH(%d,%d)", model_count, p, q + 1))
         myingarch(x, order = c(p, q + 1), ic = ic, trace = trace, xreg = xreg,
                   distr = distribution_matched, link = link_matched, ...)
       }, warning = function(w) {
@@ -387,7 +380,6 @@ auto.ingarch <- function(y,                          # Input time series (count 
       warnings_captured <- character(0)
       fit <- withCallingHandlers({
         model_count <- model_count + 1
-        if (trace) cat(sprintf("\n%2d: Evaluating INGARCH(%d,%d)", model_count, p - 1, q - 1))
         myingarch(x, order = c(p - 1, q - 1), ic = ic, trace = trace, xreg = xreg,
                   distr = distribution_matched, link = link_matched, ...)
       }, warning = function(w) {
@@ -405,7 +397,6 @@ auto.ingarch <- function(y,                          # Input time series (count 
       warnings_captured <- character(0)
       fit <- withCallingHandlers({
         model_count <- model_count + 1
-        if (trace) cat(sprintf("\n%2d: Evaluating INGARCH(%d,%d)", model_count, p - 1, q + 1))
         myingarch(x, order = c(p - 1, q + 1), ic = ic, trace = trace, xreg = xreg,
                   distr = distribution_matched, link = link_matched, ...)
       }, warning = function(w) {
@@ -423,7 +414,6 @@ auto.ingarch <- function(y,                          # Input time series (count 
       warnings_captured <- character(0)
       fit <- withCallingHandlers({
         model_count <- model_count + 1
-        if (trace) cat(sprintf("\n%2d: Evaluating INGARCH(%d,%d)", model_count, p + 1, q - 1))
         myingarch(x, order = c(p + 1, q - 1), ic = ic, trace = trace, xreg = xreg,
                   distr = distribution_matched, link = link_matched, ...)
       }, warning = function(w) {
@@ -441,7 +431,6 @@ auto.ingarch <- function(y,                          # Input time series (count 
       warnings_captured <- character(0)
       fit <- withCallingHandlers({
         model_count <- model_count + 1
-        if (trace) cat(sprintf("\n%2d: Evaluating INGARCH(%d,%d)", model_count, p + 1, q + 1))
         myingarch(x, order = c(p + 1, q + 1), ic = ic, trace = trace, xreg = xreg,
                   distr = distribution_matched, link = link_matched, ...)
       }, warning = function(w) {
