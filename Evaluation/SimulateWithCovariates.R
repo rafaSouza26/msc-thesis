@@ -1,14 +1,12 @@
 # INGARCH Model Simulation Study - With Covariates
 # Comparing model selection methods: auto.ingarch with stepwise vs grid search
-# Version: Refactored for parameter structure consistency & text progress
 
 # Load required packages
 library(tscount)
 library(dplyr)
 library(readxl)
-library(doParallel) # Still needed for parallel execution
-library(foreach)    # Still needed for parallel execution
-# Removed: library(progressr)
+library(doParallel)
+library(foreach)
 
 # Source custom functions
 source("./ACTS/auto.ingarch.R")
