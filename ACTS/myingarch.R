@@ -137,10 +137,11 @@ myingarch <- function(x, order = c(NULL, NULL), ic = "aic", trace = FALSE,
     }
     
     # Calculate AIC
-    fit$aic <- -2 * loglik + 2 * npar
+    fit$aic <- summary(fit)$AIC #-2 * loglik + 2 * npar
+    
     
     # Calculate BIC
-    fit$bic <- -2 * loglik + npar * log(nstar)
+    fit$bic <- summary(fit)$BIC #-2 * loglik + npar * log(nstar)
     
     # Calculate AICc
     if (nstar <= npar + 2) {
