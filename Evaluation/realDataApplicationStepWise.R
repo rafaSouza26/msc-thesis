@@ -18,8 +18,8 @@ tryCatch(source("./ACTS/myingarch.R"), error = function(e) stop("Failed to sourc
 
 # --- 3. Define Parameters and Setup ---
 cat("Defining parameters...\n")
-MAX_P <- 2
-MAX_Q <- 2
+MAX_P <- 7
+MAX_Q <- 7
 DISTRIBUTION <- "nbinom"
 LINK <- "log"
 IC <- "aic"
@@ -42,7 +42,7 @@ if (!dir.exists(OUTPUT_DIR)) {
 }
 DETAILED_RESULTS_CSV_FILE <- file.path(OUTPUT_DIR, "district_fitting_detailed_results_stepwise.csv")
 
-NUM_DISTRICTS_TO_PROCESS <- 5
+NUM_DISTRICTS_TO_PROCESS <- 18
 ALL_DISTRICT_CODES_AVAILABLE <- 1:18
 
 if (NUM_DISTRICTS_TO_PROCESS > length(ALL_DISTRICT_CODES_AVAILABLE)) {
