@@ -45,7 +45,7 @@ myingarch <- function(x, order = c(NULL, NULL), ic = "aic", trace = FALSE,
   model_spec <- list(
     past_obs = p_order,    # p parameter
     past_mean = q_order,   # q parameter
-    external = !is.null(xreg)
+    external = NULL
   )
   
   # Handle external regressors
@@ -137,11 +137,10 @@ myingarch <- function(x, order = c(NULL, NULL), ic = "aic", trace = FALSE,
     }
     
     # Calculate AIC
-    fit$aic <- summary(fit)$AIC #-2 * loglik + 2 * npar
-    
+    fit$aic <- summary(fit)$AIC
     
     # Calculate BIC
-    fit$bic <- summary(fit)$BIC #-2 * loglik + npar * log(nstar)
+    fit$bic <- summary(fit)$BIC
     
     # Calculate AICc
     if (nstar <= npar + 2) {
