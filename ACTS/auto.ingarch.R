@@ -244,9 +244,9 @@ auto.ingarch <- function(y,                          # Input time series (count 
   # 1. Initial model (start.p, start.q)
   warnings_captured <- character(0) # Temp store for warnings of current model
   bestfit <- withCallingHandlers({    # Fit model and capture warnings
-    model_count <<- model_count + 1 # Increment model counter
+    model_count <- model_count + 1 # Increment model counter
     if (trace) cat(sprintf("\n%2d: Evaluating INGARCH(%d,%d)", model_count, p, q))
-    myingarch(x, order = c(p, q), ic = ic, trace = FALSE, xreg = xreg, # Call internal fitting function
+    myingarch(x, order = c(p, q), ic = ic, trace = trace, xreg = xreg, # Call internal fitting function
               distr = distribution_matched, link = link_matched, ...)
   }, warning = function(w) { # Warning handler
     warnings_captured <<- c(warnings_captured, conditionMessage(w)) # Store warning message
@@ -260,9 +260,9 @@ auto.ingarch <- function(y,                          # Input time series (count 
   if (k < nmodels && (p != 0 || q != 0)) { # Check if (0,0) is different from initial
     warnings_captured <- character(0)
     fit <- withCallingHandlers({
-      model_count <<- model_count + 1
+      model_count <- model_count + 1
       if (trace) cat(sprintf("\n%2d: Evaluating INGARCH(0,0)", model_count))
-      myingarch(x, order = c(0, 0), ic = ic, trace = FALSE, xreg = xreg,
+      myingarch(x, order = c(0, 0), ic = ic, trace = trace, xreg = xreg,
                 distr = distribution_matched, link = link_matched, ...)
     }, warning = function(w) {
       warnings_captured <<- c(warnings_captured, conditionMessage(w)); invokeRestart("muffleWarning")
@@ -278,9 +278,9 @@ auto.ingarch <- function(y,                          # Input time series (count 
     if (k < nmodels) {
       warnings_captured <- character(0)
       fit <- withCallingHandlers({
-        model_count <<- model_count + 1
+        model_count <- model_count + 1
         if (trace) cat(sprintf("\n%2d: Evaluating INGARCH(1,0)", model_count))
-        myingarch(x, order = c(1, 0), ic = ic, trace = FALSE, xreg = xreg,
+        myingarch(x, order = c(1, 0), ic = ic, trace = trace, xreg = xreg,
                   distr = distribution_matched, link = link_matched, ...)
       }, warning = function(w) {
         warnings_captured <<- c(warnings_captured, conditionMessage(w)); invokeRestart("muffleWarning")
@@ -297,9 +297,9 @@ auto.ingarch <- function(y,                          # Input time series (count 
     if (k < nmodels) {
       warnings_captured <- character(0)
       fit <- withCallingHandlers({
-        model_count <<- model_count + 1
+        model_count <- model_count + 1
         if (trace) cat(sprintf("\n%2d: Evaluating INGARCH(0,1)", model_count))
-        myingarch(x, order = c(0, 1), ic = ic, trace = FALSE, xreg = xreg,
+        myingarch(x, order = c(0, 1), ic = ic, trace = trace, xreg = xreg,
                   distr = distribution_matched, link = link_matched, ...)
       }, warning = function(w) {
         warnings_captured <<- c(warnings_captured, conditionMessage(w)); invokeRestart("muffleWarning")
@@ -316,9 +316,9 @@ auto.ingarch <- function(y,                          # Input time series (count 
     if (k < nmodels) {
       warnings_captured <- character(0)
       fit_11 <- withCallingHandlers({ # Use a distinct variable name for clarity
-        model_count <<- model_count + 1
+        model_count <- model_count + 1
         if (trace) cat(sprintf("\n%2d: Evaluating INGARCH(1,1)", model_count))
-        myingarch(x, order = c(1, 1), ic = ic, trace = FALSE, xreg = xreg,
+        myingarch(x, order = c(1, 1), ic = ic, trace = trace, xreg = xreg,
                   distr = distribution_matched, link = link_matched, ...)
       }, warning = function(w) {
         warnings_captured <<- c(warnings_captured, conditionMessage(w)); invokeRestart("muffleWarning")
@@ -350,9 +350,9 @@ auto.ingarch <- function(y,                          # Input time series (count 
       if(k > nmodels) break # Stop if model limit reached
       warnings_captured <- character(0)
       fit <- withCallingHandlers({
-        model_count <<- model_count + 1 # Increment total models evaluated
+        model_count <- model_count + 1 # Increment total models evaluated
         if (trace) cat(sprintf("\n%2d: Evaluating INGARCH(%d,%d)", model_count, p - 1, q))
-        myingarch(x, order = c(p - 1, q), ic = ic, trace = FALSE, xreg = xreg,
+        myingarch(x, order = c(p - 1, q), ic = ic, trace = trace, xreg = xreg,
                   distr = distribution_matched, link = link_matched, ...)
       }, warning = function(w) {
         warnings_captured <<- c(warnings_captured, conditionMessage(w)); invokeRestart("muffleWarning")
@@ -368,9 +368,9 @@ auto.ingarch <- function(y,                          # Input time series (count 
       if(k > nmodels) break
       warnings_captured <- character(0)
       fit <- withCallingHandlers({
-        model_count <<- model_count + 1
+        model_count <- model_count + 1
         if (trace) cat(sprintf("\n%2d: Evaluating INGARCH(%d,%d)", model_count, p, q + 1))
-        myingarch(x, order = c(p, q + 1), ic = ic, trace = FALSE, xreg = xreg,
+        myingarch(x, order = c(p, q + 1), ic = ic, trace = trace, xreg = xreg,
                   distr = distribution_matched, link = link_matched, ...)
       }, warning = function(w) {
         warnings_captured <<- c(warnings_captured, conditionMessage(w)); invokeRestart("muffleWarning")
@@ -386,9 +386,9 @@ auto.ingarch <- function(y,                          # Input time series (count 
       if(k > nmodels) break
       warnings_captured <- character(0)
       fit <- withCallingHandlers({
-        model_count <<- model_count + 1
+        model_count <- model_count + 1
         if (trace) cat(sprintf("\n%2d: Evaluating INGARCH(%d,%d)", model_count, p - 1, q - 1))
-        myingarch(x, order = c(p - 1, q - 1), ic = ic, trace = FALSE, xreg = xreg,
+        myingarch(x, order = c(p - 1, q - 1), ic = ic, trace = trace, xreg = xreg,
                   distr = distribution_matched, link = link_matched, ...)
       }, warning = function(w) {
         warnings_captured <<- c(warnings_captured, conditionMessage(w)); invokeRestart("muffleWarning")
@@ -404,9 +404,9 @@ auto.ingarch <- function(y,                          # Input time series (count 
       if(k > nmodels) break
       warnings_captured <- character(0)
       fit <- withCallingHandlers({
-        model_count <<- model_count + 1
+        model_count <- model_count + 1
         if (trace) cat(sprintf("\n%2d: Evaluating INGARCH(%d,%d)", model_count, p - 1, q + 1))
-        myingarch(x, order = c(p - 1, q + 1), ic = ic, trace = FALSE, xreg = xreg,
+        myingarch(x, order = c(p - 1, q + 1), ic = ic, trace = trace, xreg = xreg,
                   distr = distribution_matched, link = link_matched, ...)
       }, warning = function(w) {
         warnings_captured <<- c(warnings_captured, conditionMessage(w)); invokeRestart("muffleWarning")
@@ -422,9 +422,9 @@ auto.ingarch <- function(y,                          # Input time series (count 
       if(k > nmodels) break
       warnings_captured <- character(0)
       fit <- withCallingHandlers({
-        model_count <<- model_count + 1
+        model_count <- model_count + 1
         if (trace) cat(sprintf("\n%2d: Evaluating INGARCH(%d,%d)", model_count, p + 1, q - 1))
-        myingarch(x, order = c(p + 1, q - 1), ic = ic, trace = FALSE, xreg = xreg,
+        myingarch(x, order = c(p + 1, q - 1), ic = ic, trace = trace, xreg = xreg,
                   distr = distribution_matched, link = link_matched, ...)
       }, warning = function(w) {
         warnings_captured <<- c(warnings_captured, conditionMessage(w)); invokeRestart("muffleWarning")
@@ -440,9 +440,9 @@ auto.ingarch <- function(y,                          # Input time series (count 
       if(k > nmodels) break
       warnings_captured <- character(0)
       fit <- withCallingHandlers({
-        model_count <<- model_count + 1
+        model_count <- model_count + 1
         if (trace) cat(sprintf("\n%2d: Evaluating INGARCH(%d,%d)", model_count, p + 1, q + 1))
-        myingarch(x, order = c(p + 1, q + 1), ic = ic, trace = FALSE, xreg = xreg,
+        myingarch(x, order = c(p + 1, q + 1), ic = ic, trace = trace, xreg = xreg,
                   distr = distribution_matched, link = link_matched, ...)
       }, warning = function(w) {
         warnings_captured <<- c(warnings_captured, conditionMessage(w)); invokeRestart("muffleWarning")
