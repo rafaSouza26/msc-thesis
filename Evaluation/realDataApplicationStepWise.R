@@ -24,7 +24,7 @@ DISTRIBUTION <- "nbinom"
 LINK <- "log"
 IC <- "aic"
 STEPWISE <- TRUE
-TRACE <- FALSE
+TRACE <- TRUE
 SHOW_WARNINGS <- FALSE
 
 DATA_PATH <- "./data/count_covariates_data.RData"
@@ -42,7 +42,7 @@ if (!dir.exists(OUTPUT_DIR)) {
 }
 DETAILED_RESULTS_CSV_FILE <- file.path(OUTPUT_DIR, "district_fitting_detailed_results_stepwise.csv")
 
-NUM_DISTRICTS_TO_PROCESS <- 18
+NUM_DISTRICTS_TO_PROCESS <- 1
 ALL_DISTRICT_CODES_AVAILABLE <- 1:18
 
 if (NUM_DISTRICTS_TO_PROCESS > length(ALL_DISTRICT_CODES_AVAILABLE)) {
@@ -251,7 +251,7 @@ for (i in DISTRICT_CODES_TO_PROCESS) {
       iter_result$q <- if(is.null(fit_model$model$past_mean)) 0L else length(fit_model$model$past_mean)
       iter_result$aic_value <- tryCatch(stats::AIC(fit_model), error = function(e) NA_real_)
       iter_result$bic_value <- tryCatch(stats::BIC(fit_model), error = function(e) NA_real_)
-      iter_result$n_models_tested <- if(!is.null(fit_model$n_models_evaluated)) fit_model$n_models_evaluated else NA_integer_
+      iter_result$n_models_tested <- if(!is.null(fit_model$n_total_models)) fit_model$n_total_models else NA_integer_
       # ... (n_models_tested logic remains same)
       
       all_coeffs <- tryCatch(stats::coef(fit_model), error = function(e) NULL)
