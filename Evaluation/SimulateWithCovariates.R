@@ -90,7 +90,7 @@ populate_results_from_fit_with_cov <- function(fit_object, template_data,
     populated_data$p_order <- current_p_order
     populated_data$q_order <- current_q_order
     
-    populated_data$n_models_tested <- if(!is.null(fit_object$n_models_evaluated)) as.integer(fit_object$n_models_evaluated)[1] else NA_integer_
+    populated_data$n_models_tested <- if(!is.null(fit_object$n_total_models)) as.integer(fit_object$n_total_models)[1] else NA_integer_
     populated_data$aic <- as.numeric(tryCatch(stats::AIC(fit_object), error = function(e) NA_real_))[1]
     populated_data$bic <- as.numeric(tryCatch(stats::BIC(fit_object), error = function(e) NA_real_))[1]
     

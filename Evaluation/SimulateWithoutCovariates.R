@@ -37,7 +37,7 @@ extract_model_params <- function(data_path, model_row = 1) {
 run_simulation_study_no_covariates_parallel <- function() {
   set.seed(12345)
   
-  num_simulations <- 10
+  num_simulations <- 5
   sim_length <- 10
   progress_print_frequency <- max(1, floor(num_simulations / 10))
   
@@ -91,7 +91,7 @@ run_simulation_study_no_covariates_parallel <- function() {
   task_max.p <- 2
   task_max.q <- 2
   task_max.order_stepwise <- 5
-  task_max.order_grid <- 4
+  task_max.order_grid <- 2
   task_distribution <- "nbinom"
   task_link <- "log"
   task_ic <- "aic"
@@ -134,7 +134,7 @@ run_simulation_study_no_covariates_parallel <- function() {
       }
       populated_data$p_order <- current_p_order
       populated_data$q_order <- current_q_order
-      populated_data$n_models_tested <- if(!is.null(fit_object$n_models_evaluated)) as.integer(fit_object$n_models_evaluated)[1] else NA_integer_
+      populated_data$n_models_tested <- if(!is.null(fit_object$n_total_models)) as.integer(fit_object$n_total_models)[1] else NA_integer_
       populated_data$aic <- as.numeric(tryCatch(stats::AIC(fit_object), error = function(e) NA_real_))[1]
       populated_data$bic <- as.numeric(tryCatch(stats::BIC(fit_object), error = function(e) NA_real_))[1]
       
@@ -197,7 +197,7 @@ run_simulation_study_no_covariates_parallel <- function() {
   }
   
   num_cores_detected <- detectCores(logical = FALSE)
-  cores_to_use <- max(1, num_cores_detected - 1)
+  cores_to_use <- max(1, num_cores_detected - 2)
   if(actual_num_simulations < cores_to_use) cores_to_use <- actual_num_simulations
   
   cl <- makeCluster(cores_to_use)
