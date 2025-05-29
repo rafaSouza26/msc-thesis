@@ -154,7 +154,7 @@ def create_time_boxplots(filepath,
                         # MODIFIED PART for red text "Mean: value"
                         ax.annotate(f'Mean: {mean_val:.2f}',       # Text format
                                     xy=(mean_points_x[i], mean_val),# Point to annotate
-                                    xytext=(8, 0),                  # Offset text (8 points right, 0 points vertical)
+                                    xytext=(8, -6),                  # Offset text (8 points right, 0 points vertical)
                                     textcoords='offset points',     # Specify offset in points
                                     color='red',                    # Text color red
                                     ha='left',                      # Horizontal alignment
@@ -188,8 +188,8 @@ def create_time_boxplots(filepath,
 
 # --- Define your .csv file paths here ---
 # Replace these with the actual paths to your CSV files
-path_to_csv_no_covariates = r'C:\Users\Rafael\Desktop\msc-thesis\SimulationResults\ingarch_no_covariates_results.csv'
-path_to_csv_with_covariates = r'C:\Users\Rafael\Desktop\msc-thesis\SimulationResults\ingarch_with_covariates_results.csv'
+path_to_csv_no_covariates = r'C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\no_covariates\ingarch_no_covariates_results.csv'
+path_to_csv_with_covariates = r'C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\with_covariates\ingarch_with_covariates_results.csv'
 
 # --- Define Output Directory for Time Boxplots ---
 time_plot_output_directory = "ingarch_execution_times_boxplots_red_mean_text" # Updated directory name for clarity

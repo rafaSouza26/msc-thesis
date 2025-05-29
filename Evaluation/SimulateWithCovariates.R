@@ -321,7 +321,7 @@ run_simulation_study_with_covariates_parallel <- function() {
   target_column_names <<- c("method", "sim_id", names(results_template))
   
   num_cores_detected <- detectCores(logical = FALSE) # Physical cores
-  cores_to_use <- max(1, num_cores_detected - 2) # Leave 2 cores free or use 1 if only 1-2 available
+  cores_to_use <- max(1, num_cores_detected - 1) # Leave 2 cores free or use 1 if only 1-2 available
   if(num_simulations < cores_to_use) cores_to_use <- num_simulations # Don't use more cores than tasks
   
   cl <- makeCluster(cores_to_use)

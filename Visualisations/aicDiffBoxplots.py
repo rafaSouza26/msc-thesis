@@ -225,7 +225,7 @@ def create_aic_difference_boxplots(filepath,
                     if pd.notnull(mean_val):
                         ax.annotate(f'Mean: {mean_val:.2f}', # Text format "Mean: value"
                                     xy=(i, mean_val),               # Point to annotate (center of the red dot)
-                                    xytext=(8, -7),                  # Offset text 8 points to the right, 0 points vertical
+                                    xytext=(8, -9),                  # Offset text 8 points to the right, 0 points vertical
                                     textcoords='offset points',     # Specify offset in points
                                     color='red',                    # Text color red
                                     ha='left',                      # Horizontal alignment of text
@@ -267,8 +267,8 @@ def create_aic_difference_boxplots(filepath,
 # %% --- Example Usage ---
 # IMPORTANT: Pandas, Matplotlib, Seaborn are required.
 file_paths_to_process = [
-    r'C:\Users\Rafael\Desktop\msc-thesis\SimulationResults\ingarch_no_covariates_results.csv',
-    r'C:\Users\Rafael\Desktop\msc-thesis\SimulationResults\ingarch_with_covariates_results.csv'
+    r'C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\no_covariates\ingarch_no_covariates_results.csv',
+    r'C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\with_covariates\ingarch_with_covariates_results.csv'
 ]
 
 case_labels_for_files = [

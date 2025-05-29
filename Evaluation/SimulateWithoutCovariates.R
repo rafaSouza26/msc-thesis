@@ -37,8 +37,8 @@ extract_model_params <- function(data_path, model_row = 1) {
 run_simulation_study_no_covariates_parallel <- function() {
   set.seed(12345)
   
-  num_simulations <- 10
-  sim_length <- 10
+  num_simulations <- 1000
+  sim_length <- 1000
   progress_print_frequency <- max(1, floor(num_simulations / 10))
   
   cat("Starting INGARCH simulation study (without covariates) - PARALLEL EXECUTION.\n")
@@ -88,10 +88,10 @@ run_simulation_study_no_covariates_parallel <- function() {
   
   cat("\nStep 3: Running model selection in PARALLEL...\n")
   
-  task_max.p <- 2
-  task_max.q <- 2
+  task_max.p <- 7
+  task_max.q <- 7
   task_max.order_stepwise <- 5
-  task_max.order_grid <- 4
+  task_max.order_grid <- 14
   task_distribution <- "nbinom"
   task_link <- "log"
   task_ic <- "aic"
