@@ -1,0 +1,3 @@
+"method","total_sims","successful_fits","mean_p_order","median_p_order","sd_p_order","mean_q_order","median_q_order","sd_q_order","mean_time_secs","median_time_secs","sd_time_secs","mean_fitted_models","median_fitted_models","sd_fitted_models","failure_count"
+"grid_search",100,100,1.26,1,0.705247288100945,0.77,0,1.10878038375232,16.525,16.4500000000007,0.454629386190506,,,,0
+"stepwise",100,100,1.1,1,0.414387707005374,0.46,0,0.809289500086029,8.41779999999988,7.17499999999927,2.69807547572841,7.21,6,2.08552006449085,0

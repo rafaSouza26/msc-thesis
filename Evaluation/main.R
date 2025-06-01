@@ -36,7 +36,7 @@ simulated_data <- ingarch.sim(
   n = 1000, # Generate 1000 observations
   param = new_params,
   model = new_model_structure,
-  link = "identity", # Use identity link function for simulation
+  link = "log", # Use identity link function for simulation
   distr = "nbinom", # Use Negative Binomial distribution for simulation
   size = 2          # NB 'size' parameter
 )
@@ -79,7 +79,7 @@ fitted_model <- try({
     distribution = "nbinom",
     stepwise = TRUE,
     link = "log",
-    trace = TRUE,
+    trace = FALSE,
     nmodels = 100, # You might want to increase this if max.p/max.q are larger
     parallel = FALSE,
     show_warnings = FALSE
@@ -235,8 +235,12 @@ if (inherits(fitted_model, "try-error")) {
     model_info_df <- data.frame(Message="No information extracted from the model.")
   }
   
+  tester <- tsglm(ts_data, model=list(past_obs=c(1,2), past_mean=c(1,2,3,4,5,6)), distr = "nbinom", link = "log")
   
   cat("\n--- Fitted Model Information Data Frame ---\n")
   print(model_info_df)
+  
+  cat("\n \n tester aic", summary(tester)$AIC)
+  cat("\n auto.ingarch aic", summary(fitted_model)$AIC)
   
 } # End of main else block

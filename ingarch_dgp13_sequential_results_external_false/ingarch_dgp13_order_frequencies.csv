@@ -1,0 +1,22 @@
+"method"     , "p_order", "q_order", "count", "freq"
+"grid_search",         1,         0,      49,     49
+"grid_search",         1,         3,      14,     14
+"grid_search",         1,         1,      11,     11
+"grid_search",         1,         2,       9,      9
+"grid_search",         2,         0,       6,      6
+"grid_search",         3,         1,       3,      3
+"grid_search",         4,         0,       3,      3
+"grid_search",         3,         0,       2,      2
+"grid_search",         0,         0,       1,      1
+"grid_search",         2,         1,       1,      1
+"grid_search",         2,         2,       1,      1
+"stepwise"   ,         1,         0,      65,     65
+"stepwise"   ,         1,         1,      16,     16
+"stepwise"   ,         1,         2,       6,      6
+"stepwise"   ,         2,         1,       4,      4
+"stepwise"   ,         2,         0,       3,      3
+"stepwise"   ,         1,         3,       2,      2
+"stepwise"   ,         0,         0,       1,      1
+"stepwise"   ,         1,         4,       1,      1
+"stepwise"   ,         2,         2,       1,      1
+"stepwise"   ,         4,         2,       1,      1
