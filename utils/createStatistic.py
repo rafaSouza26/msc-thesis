@@ -104,12 +104,12 @@ if __name__ == "__main__":
     
     # Input CSV file path - EDIT THIS LINE with your Windows path
     # Ensure this file has columns like 'method', 'p', 'q', 'time', 'n_models'
-    input_file = r"C:\Users\Rafael\Desktop\msc-thesis\SimulationResults\ingarch_with_covariates_results.csv" # EXAMPLE PATH
+    input_file = r"C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\with_covariates\ingarch_with_covariates_results.csv"
     
     # Output CSV file path - EDIT THIS LINE with your Windows path
     # If you want the output in the same folder as the input with an automatic name,
     # you can set this to None
-    output_file = r"C:\Users\Rafael\Desktop\msc-thesis\utils\ingarch_with_covariates_stats.csv" # EXAMPLE PATH
+    output_file = r"C:\Users\Rafael\Desktop\msc-thesis\utils\ingarch_with_covariates_stats.csv"
     # output_file = None # Uncomment this line to auto-generate output filename
     
     # ====================================================================

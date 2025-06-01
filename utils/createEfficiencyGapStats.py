@@ -128,7 +128,7 @@ def analyze_ingarch_csv_results(csv_file_path, target_orders):
 if __name__ == "__main__":
     # --- Configuration ---
     # EXAMPLE: Replace with the actual path to your CSV file
-    csv_file_path = r'C:\Users\Rafael\Desktop\msc-thesis\SimulationResults\ingarch_with_covariates_results.csv' 
+    csv_file_path = r'C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\with_covariates\ingarch_with_covariates_results.csv' 
     
     if csv_file_path == r'C:\Users\YourUser\Desktop\path_to_your_data\ingarch_results_new_columns.csv' or \
        not os.path.exists(csv_file_path):
@@ -149,7 +149,7 @@ if __name__ == "__main__":
             csv_file_path = dummy_csv_path 
             print(f"Created and using dummy CSV file: {dummy_csv_path}")
             
-    target_pq_orders = [(2,6), (1,4), (1,5), (1,7), (2,5), (1,1), (3,3)] 
+    target_pq_orders = [(1,1),(1,4),(1,5),(1,6),(2,0),(2,4),(2,5),(2,6)] 
     # --- End Configuration ---
 
     analysis_results_df = analyze_ingarch_csv_results(csv_file_path, target_pq_orders)
