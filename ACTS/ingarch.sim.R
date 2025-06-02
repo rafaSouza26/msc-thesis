@@ -1,6 +1,6 @@
 ingarch.sim <- function(n,
-                        param = list(intercept = 1, past_obs = NULL, past_mean = NULL, xreg = NULL), # Changed: external to xreg
-                        model = list(past_obs = NULL, past_mean = NULL, external = FALSE),       # Changed: xreg to external
+                        param = list(intercept = 1, past_obs = NULL, past_mean = NULL, xreg = NULL),
+                        model = list(past_obs = NULL, past_mean = NULL, external = FALSE),
                         xreg = NULL, 
                         link = c("identity", "log"),
                         distr = c("poisson", "nbinom"),
