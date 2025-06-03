@@ -20,14 +20,20 @@ extract_model_params <- function(data_path, model_row = 1) {
   
   p <- as.numeric(model_data$p)
   q <- as.numeric(model_data$q)
+  cat("\nOrders: (", p, ",", q, ")")
   sigmasq <- as.numeric(model_data$sigmasq) # This is used as 'alpha' in var=mu+alpha*mu^2 for NB
+  cat("\nSigmasq: ", sigmasq)
   intercept <- as.numeric(model_data$Intercept)
+  cat("\nIntercept: ", intercept)
   
   beta_cols <- grep("^beta", colnames(excel_data), ignore.case = TRUE)
   betas <- if(length(beta_cols) > 0 && ncol(model_data[, beta_cols, drop=FALSE]) > 0) as.numeric(unlist(model_data[, beta_cols])) else numeric(0)
-  
+  cat("\nBetas: ")
+  print(betas)
   alpha_cols <- grep("^alpha", colnames(excel_data), ignore.case = TRUE)
   alphas <- if(length(alpha_cols) > 0 && ncol(model_data[, alpha_cols, drop=FALSE]) > 0) as.numeric(unlist(model_data[, alpha_cols])) else numeric(0)
+  cat("\nAlphas: ")
+  print(alphas)
   
   return(list(
     p = p, q = q, sigmasq = sigmasq, intercept = intercept,
@@ -38,8 +44,8 @@ extract_model_params <- function(data_path, model_row = 1) {
 run_simulation_study_no_covariates_parallel <- function() {
   set.seed(12345)
   
-  num_simulations <- 10
-  sim_length <- 500
+  num_simulations <- 1000
+  sim_length <- 1000
   progress_print_frequency <- max(1, floor(num_simulations / 10))
   
   cat("Starting INGARCH simulation study (without covariates) - PARALLEL EXECUTION.\n")
@@ -58,7 +64,7 @@ run_simulation_study_no_covariates_parallel <- function() {
   ingarch_model <- list(
     past_obs = if(params$p > 0) 1:params$p else NULL,
     past_mean = if(params$q > 0) 1:params$q else NULL,
-    external = FALSE
+    external = NULL
   )
   
   distrcoefs_param <- if(!is.na(params$sigmasq) && params$sigmasq > 0) {
@@ -76,7 +82,7 @@ run_simulation_study_no_covariates_parallel <- function() {
     if(i == 1 || i == num_simulations || (i %% progress_print_frequency == 0 && num_simulations > 10 && progress_print_frequency > 0 )) { # Added check for progress_print_frequency > 0
       cat("  Generating simulation", i, "of", num_simulations, "...\n")
     }
-    # MODIFIED: Changed 'size' argument to 'distrcoefs'
+
     sim_result <- ingarch.sim(n = sim_length, 
                               param = ingarch_params, 
                               model = ingarch_model, 

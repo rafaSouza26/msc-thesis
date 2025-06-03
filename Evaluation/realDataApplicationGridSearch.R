@@ -1,6 +1,4 @@
 # --- Apply auto.ingarch to District Data with Covariates by Index (Sequential) ---
-# Version: 2025-05-16 (Grid Search, Single Detailed CSV output, AIC as standard IC)
-# Version: 2025-05-23 (Grid Search, Compact CSV with Base Covariate Names)
 
 # Record script start time
 script_start_time <- Sys.time()
@@ -10,14 +8,13 @@ library(tscount)
 library(dplyr)
 library(readxl) # Kept if needed by custom functions or future use
 
-# --- 2. Source custom functions ---
-cat("Sourcing custom functions...\n")
+# --- 2. Source ACTS functions ---
+cat("Sourcing ACTS functions...\n")
 tryCatch(source("./ACTS/auto.ingarch.R"), error = function(e) stop("Failed to source auto.ingarch.R: ", e))
 tryCatch(source("./ACTS/newmodel.R"), error = function(e) stop("Failed to source newmodel.R: ", e))
 tryCatch(source("./ACTS/ingarch.string.R"), error = function(e) stop("Failed to source ingarch.string.R: ", e))
 tryCatch(source("./ACTS/search.ingarch.R"), error = function(e) stop("Failed to source search.ingarch.R: ", e))
 tryCatch(source("./ACTS/myingarch.R"), error = function(e) stop("Failed to source myingarch.R: ", e))
-
 
 # --- 3. Define Parameters and Setup ---
 cat("Defining parameters...\n")

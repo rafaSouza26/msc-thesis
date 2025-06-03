@@ -6,7 +6,7 @@ script_start_time <- Sys.time()
 # --- 1. Load required packages ---
 library(tscount)
 library(dplyr)
-library(readxl) # Not explicitly used in this version, but kept if needed by ACTS functions
+library(readxl)
 
 # --- 2. Source ACTS functions ---
 cat("Sourcing ACTS functions...\n")
@@ -24,7 +24,7 @@ DISTRIBUTION <- "nbinom"
 LINK <- "log"
 IC <- "aic"
 STEPWISE <- TRUE
-TRACE <- TRUE
+TRACE <- FALSE
 SHOW_WARNINGS <- FALSE
 
 DATA_PATH <- "./data/count_covariates_data.RData"
@@ -42,7 +42,7 @@ if (!dir.exists(OUTPUT_DIR)) {
 }
 DETAILED_RESULTS_CSV_FILE <- file.path(OUTPUT_DIR, "district_fitting_detailed_results_stepwise.csv")
 
-NUM_DISTRICTS_TO_PROCESS <- 1
+NUM_DISTRICTS_TO_PROCESS <- 18
 ALL_DISTRICT_CODES_AVAILABLE <- 1:18
 
 if (NUM_DISTRICTS_TO_PROCESS > length(ALL_DISTRICT_CODES_AVAILABLE)) {

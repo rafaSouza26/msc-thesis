@@ -251,7 +251,6 @@ auto.ingarch <- function(y,                          # Input time series (count 
     warnings_captured <<- c(warnings_captured, conditionMessage(w)) # Store warning message
     invokeRestart("muffleWarning") # Suppress a R's default warning display
   })
-  cat("\n",p,q)
   results[model_count, ] <- c(p, q, bestfit$ic) # Store results
   model_warnings[[paste0("p", p, "_q", q)]] <- warnings_captured # Store warnings
   k <- model_count # 'k' tracks the number of rows filled in the 'results' matrix
@@ -267,7 +266,6 @@ auto.ingarch <- function(y,                          # Input time series (count 
       warnings_captured <<- c(warnings_captured, conditionMessage(w)); invokeRestart("muffleWarning")
     })
     k <- k + 1
-    cat("\n",0,0)
     results[k, ] <- c(0, 0, fit$ic)
     model_warnings[[paste0("p0_q0")]] <- warnings_captured
     if (fit$ic < bestfit$ic) { bestfit <- fit; p <- 0; q <- 0; } # Update if better
@@ -285,7 +283,6 @@ auto.ingarch <- function(y,                          # Input time series (count 
         warnings_captured <<- c(warnings_captured, conditionMessage(w)); invokeRestart("muffleWarning")
       })
       k <- k + 1
-      cat("\n",1,0)
       results[k, ] <- c(1, 0, fit$ic)
       model_warnings[[paste0("p1_q0")]] <- warnings_captured
       if (fit$ic < bestfit$ic) { bestfit <- fit; p <- 1; q <- 0; }
@@ -304,7 +301,6 @@ auto.ingarch <- function(y,                          # Input time series (count 
         warnings_captured <<- c(warnings_captured, conditionMessage(w)); invokeRestart("muffleWarning")
       })
       k <- k + 1
-      cat("\n",0,1)
       results[k, ] <- c(0, 1, fit$ic)
       model_warnings[[paste0("p0_q1")]] <- warnings_captured
       if (fit$ic < bestfit$ic) { bestfit <- fit; p <- 0; q <- 1; }
@@ -323,7 +319,6 @@ auto.ingarch <- function(y,                          # Input time series (count 
         warnings_captured <<- c(warnings_captured, conditionMessage(w)); invokeRestart("muffleWarning")
       })
       k <- k + 1
-      cat("\n",1,1)
       results[k, ] <- c(1, 1, fit_11$ic)
       model_warnings[[paste0("p1_q1")]] <- warnings_captured
       if (fit_11$ic < bestfit$ic) { bestfit <- fit_11; p <- 1; q <- 1; }
@@ -356,7 +351,6 @@ auto.ingarch <- function(y,                          # Input time series (count 
       }, warning = function(w) {
         warnings_captured <<- c(warnings_captured, conditionMessage(w)); invokeRestart("muffleWarning")
       })
-      cat("\n(p-1, q) ",p-1,q)
       results[k, ] <- c(p - 1, q, fit$ic) # Store result
       model_warnings[[paste0("p", p - 1, "_q", q)]] <- warnings_captured
       if (fit$ic < bestfit$ic) { bestfit <- fit; p <- p - 1; next } # If better, update best and restart loop from new best
@@ -375,7 +369,6 @@ auto.ingarch <- function(y,                          # Input time series (count 
       }, warning = function(w) {
         warnings_captured <<- c(warnings_captured, conditionMessage(w)); invokeRestart("muffleWarning")
       })
-      cat("\n(p, q-1) ",p,q-1)
       results[k, ] <- c(p, q-1, fit$ic) # Store result
       model_warnings[[paste0("p", p, "_q", q-1)]] <- warnings_captured
       if (fit$ic < bestfit$ic) { bestfit <- fit; q <- q - 1; next } # If better, update best and restart loop from new best
@@ -394,7 +387,6 @@ auto.ingarch <- function(y,                          # Input time series (count 
       }, warning = function(w) {
         warnings_captured <<- c(warnings_captured, conditionMessage(w)); invokeRestart("muffleWarning")
       })
-      cat("\n(p+1, q) ",p+1,q)
       results[k, ] <- c(p + 1, q, fit$ic)
       model_warnings[[paste0("p", p + 1, "_q", q)]] <- warnings_captured
       if (fit$ic < bestfit$ic) { bestfit <- fit; p <- p + 1; next }
@@ -412,7 +404,6 @@ auto.ingarch <- function(y,                          # Input time series (count 
       }, warning = function(w) {
         warnings_captured <<- c(warnings_captured, conditionMessage(w)); invokeRestart("muffleWarning")
       })
-      cat("\n(p, q+1) ",p,q+1)
       results[k, ] <- c(p, q + 1, fit$ic)
       model_warnings[[paste0("p", p, "_q", q + 1)]] <- warnings_captured
       if (fit$ic < bestfit$ic) { bestfit <- fit; q <- q + 1; next }
@@ -431,7 +422,6 @@ auto.ingarch <- function(y,                          # Input time series (count 
       }, warning = function(w) {
         warnings_captured <<- c(warnings_captured, conditionMessage(w)); invokeRestart("muffleWarning")
       })
-      cat("\n(p-1, q-1) ",p-1,q-1)
       results[k, ] <- c(p - 1, q - 1, fit$ic)
       model_warnings[[paste0("p", p - 1, "_q", q - 1)]] <- warnings_captured
       if (fit$ic < bestfit$ic) { bestfit <- fit; q <- q - 1; p <- p - 1; next }
@@ -449,7 +439,6 @@ auto.ingarch <- function(y,                          # Input time series (count 
       }, warning = function(w) {
         warnings_captured <<- c(warnings_captured, conditionMessage(w)); invokeRestart("muffleWarning")
       })
-      cat("\n(p-1, q+1) ",p-1,q+1)
       results[k, ] <- c(p - 1, q + 1, fit$ic)
       model_warnings[[paste0("p", p - 1, "_q", q + 1)]] <- warnings_captured
       if (fit$ic < bestfit$ic) { bestfit <- fit; q <- q + 1; p <- p - 1; next }
@@ -467,7 +456,6 @@ auto.ingarch <- function(y,                          # Input time series (count 
       }, warning = function(w) {
         warnings_captured <<- c(warnings_captured, conditionMessage(w)); invokeRestart("muffleWarning")
       })
-      cat("\n(p+1, q-1) ",p+1,q-1)
       results[k, ] <- c(p + 1, q - 1, fit$ic)
       model_warnings[[paste0("p", p + 1, "_q", q - 1)]] <- warnings_captured
       if (fit$ic < bestfit$ic) { bestfit <- fit; q <- q - 1; p <- p + 1; next }
@@ -485,7 +473,6 @@ auto.ingarch <- function(y,                          # Input time series (count 
       }, warning = function(w) {
         warnings_captured <<- c(warnings_captured, conditionMessage(w)); invokeRestart("muffleWarning")
       })
-      cat("\n(p+1, q+1) ",p+1,q+1)
       results[k, ] <- c(p + 1, q + 1, fit$ic)
       model_warnings[[paste0("p", p + 1, "_q", q + 1)]] <- warnings_captured
       if (fit$ic < bestfit$ic) { bestfit <- fit; q <- q + 1; p <- p + 1; next }

@@ -37,7 +37,7 @@ simulated_data <- ingarch.sim(
   n = 1000,                   # Generate 1000 observations
   param = new_params,
   model = new_model_structure,
-  link = "identity",            # Use identity link function for simulation
+  link = "log",            # Use identity link function for simulation
   distr = "nbinom",             # Use Negative Binomial distribution for simulation
   distrcoefs = 2                # MODIFIED: Changed 'size = 2' to 'distrcoefs = 2'
   # If you were using external regressors, you would also pass the 'xreg = your_xreg_matrix' argument here.
@@ -77,6 +77,8 @@ fitted_model <- try({
     y = ts_data,
     max.p = 7, # Maximum AR order (true is 2)
     max.q = 7, # Maximum MA order (true is 6)
+    start.p = 4,
+    start.q = 4,
     max.order = 14,
     ic = "aic",
     distribution = "nbinom",
@@ -216,6 +218,6 @@ if (inherits(fitted_model, "try-error")) {
   cat("\n--- Fitted Model Information Data Frame ---\n")
   print(model_info_df)
   
-  tester <- tsglm(ts = ts_data, model = list(past_obs = c(1,2), past_mean = c(1,2,3,4,5,6), external = FALSE), distr = "nbinom", link = "log", xreg = NULL)
+  tester <- tsglm(ts = ts_data, model = list(past_obs = c(1,2), past_mean = NULL, external = FALSE), distr = "nbinom", link = "log", xreg = NULL)
   print(summary(tester)$AIC)
 }
