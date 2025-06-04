@@ -306,7 +306,7 @@ def process_and_plot(filepath, case_label, output_dir="ingarch_heatmaps"):
 
 # --- Define your file paths here ---
 path_to_file_no_covariates = r'C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\no_covariates\ingarch_no_covariates_order_frequencies.csv'
-path_to_file_with_covariates = r'C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\with_covariates\ingarch_with_covariates_order_frequencies.csv'
+path_to_file_with_covariates = r'C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\with_covariates\ingarch_with_covariates_order_frequencies_combined.csv'
 
 # --- Define Output Directory ---
 plot_output_directory = "ingarch_order_heatmaps" # Define the folder name here (changed to distinguish)

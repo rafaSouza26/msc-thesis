@@ -207,7 +207,7 @@ def generate_grid_path_plots_for_final_models(
 
 # --- Main execution ---
 if __name__ == "__main__":
-    csv_file_path = r"C:\Users\Rafael\Desktop\msc-thesis\Results\Paths\auto_ingarch_stepwise_paths.csv" 
+    csv_file_path = r"C:\Users\Rafael\Desktop\msc-thesis\auto_ingarch_stepwise_paths.csv" 
     
     target_models_list_str = ["(2,6)", "(2,0)", "(2,5)", "(4,7)"]
     
@@ -220,7 +220,7 @@ if __name__ == "__main__":
 
     true_model_specification_str = "(2,6)"
     
-    output_plots_directory = r"C:\Users\Rafael\Desktop\msc-thesis\Results\Paths\Plots"
+    output_plots_directory = r"C:\Users\Rafael\Desktop\msc-thesis\Results\Paths\Plots\model2"
 
     print(f"Attempting to read CSV file from: {csv_file_path}")
     print(f"Target final models for plotting: {target_models_list_str}")

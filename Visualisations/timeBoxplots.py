@@ -189,7 +189,7 @@ def create_time_boxplots(filepath,
 # --- Define your .csv file paths here ---
 # Replace these with the actual paths to your CSV files
 path_to_csv_no_covariates = r'C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\no_covariates\ingarch_no_covariates_results.csv'
-path_to_csv_with_covariates = r'C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\with_covariates\ingarch_with_covariates_results.csv'
+path_to_csv_with_covariates = r'C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\with_covariates\ingarch_with_covariates_results_combined.csv'
 
 # --- Define Output Directory for Time Boxplots ---
 time_plot_output_directory = "ingarch_execution_times_boxplots_red_mean_text" # Updated directory name for clarity
@@ -239,7 +239,7 @@ else:
 # Example of how it looks without the mean value text (show_mean_value=False)
 if os.path.exists(path_to_csv_with_covariates): # Re-use one of the files for this demo
     create_time_boxplots(path_to_csv_with_covariates,
-                         "With Covariates Data (Mean Dot Only)", # Modified case_label for this demo plot
+                         "With Covariates Data",
                          output_dir=time_plot_output_directory,
                          method_rename_map=user_defined_method_names,
                          custom_palette=user_defined_palette,

@@ -267,12 +267,14 @@ def create_aic_difference_boxplots(filepath,
 # %% --- Example Usage ---
 # IMPORTANT: Pandas, Matplotlib, Seaborn are required.
 file_paths_to_process = [
-    r'C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\no_covariates\ingarch_no_covariates_results.csv',
-    r'C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\with_covariates\ingarch_with_covariates_results.csv'
+    r'C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\no_covariates\Model1\ingarch_no_covariates_results.csv',
+    r'C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\no_covariates\Model2\ingarch_no_covariates_results.csv',
+    r'C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\with_covariates\ingarch_with_covariates_results_combined.csv',
 ]
 
 case_labels_for_files = [
-    "No Covariates Data",
+    "No Covariates Data M1",
+    "No Covariates Data M2",
     "With Covariates Data"
 ]
 
@@ -309,7 +311,7 @@ else:
                                            output_dir=plot_output_directory,
                                            method_rename_map=user_defined_method_names,
                                            custom_palette=user_defined_palette,
-                                           show_mean_value=True) # <<< Set to True to show styled mean values
+                                           show_mean_value=False) # <<< Set to True to show styled mean values
         else:
             print(f"File not found: {file_path}")
             print(f"  Please update 'file_paths_to_process' with the correct CSV file path(s).")
