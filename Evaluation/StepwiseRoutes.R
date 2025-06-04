@@ -54,7 +54,7 @@ cat("Custom functions sourced successfully.\n")
 # --- User-defined parameters for the analysis ---
 # Path to your .RDS file containing the time series simulations list
 # This path should also be relative to your current working directory, or an absolute path.
-rds_file_path <- "./Results/Simulation/no_covariates/Model1/ingarch_no_covariates_simulations.rds" # Adjust if needed
+rds_file_path <- "./Results/Simulation/no_covariates/Model2/ingarch_no_covariates_simulations.rds" # Adjust if needed
 
 # Number of simulations to process from the list
 num_simulations_to_process <- 100 # For testing; set to length(simulations_list) for all.

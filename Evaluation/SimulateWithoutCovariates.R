@@ -52,7 +52,7 @@ run_simulation_study_no_covariates_parallel <- function() {
   cat("Configuration: num_simulations =", num_simulations, ", sim_length =", sim_length, "\n")
   
   cat("Step 1: Extracting model parameters from Excel file...\n")
-  params <- extract_model_params("./data/modelosAveiro.xlsx", model_row = 1) # Ensure this path is correct
+  params <- extract_model_params("./data/modelosAveiro.xlsx", model_row = 2) # Ensure this path is correct
   cat("  True p_order=", params$p, ", True q_order=", params$q, ", True sigmasq (alpha for NB variance form mu+alpha*mu^2)=", params$sigmasq, "\n") # MODIFIED comment
   
   ingarch_params <- list(
