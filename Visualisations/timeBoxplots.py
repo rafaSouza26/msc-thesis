@@ -188,11 +188,12 @@ def create_time_boxplots(filepath,
 
 # --- Define your .csv file paths here ---
 # Replace these with the actual paths to your CSV files
-path_to_csv_no_covariates = r'C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\no_covariates\ingarch_no_covariates_results.csv'
-path_to_csv_with_covariates = r'C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\with_covariates\ingarch_with_covariates_results_combined.csv'
+path_to_csv_no_covariates_m1 = r'C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\no_covariates\Model1\ingarch_no_covariates_results.csv'
+path_to_csv_no_covariates_m2 = r'C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\no_covariates\Model2\ingarch_no_covariates_results.csv'
+path_to_csv_with_covariates = r'C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\with_covariates\Combined_cpu3\ingarch_with_covariates_results.csv'
 
 # --- Define Output Directory for Time Boxplots ---
-time_plot_output_directory = "ingarch_execution_times_boxplots_red_mean_text" # Updated directory name for clarity
+time_plot_output_directory = "ingarch_execution_times_boxplots"
 
 # --- Define Custom Method Names and Palettes (Optional) ---
 user_defined_method_names = {
@@ -206,21 +207,33 @@ user_defined_palette = {
     "Grid": "#377E7F" # Darker teal/blue-green
 }
 
-
 # --- Run the execution time boxplot generation ---
 print("--- Generating Execution Time Boxplots from .csv files ---")
 
-# Process the "No Covariates" results file, showing mean values
-print(f"\nProcessing 'No Covariates' data from: {path_to_csv_no_covariates}")
-if os.path.exists(path_to_csv_no_covariates):
-    create_time_boxplots(path_to_csv_no_covariates,
-                         "No Covariates Data",
+# Process the "No Covariates" m1 results file, showing mean values
+print(f"\nProcessing 'No Covariates' data from: {path_to_csv_no_covariates_m1}")
+if os.path.exists(path_to_csv_no_covariates_m1):
+    create_time_boxplots(path_to_csv_no_covariates_m1,
+                         "No Covariates Data M1",
                          output_dir=time_plot_output_directory,
                          method_rename_map=user_defined_method_names,
                          custom_palette=user_defined_palette,
-                         show_mean_value=True) # Show styled mean numerical value for this plot
+                         show_mean_value=False) # Show styled mean numerical value for this plot
 else:
-    print(f"File not found: {path_to_csv_no_covariates}")
+    print(f"File not found: {path_to_csv_no_covariates_m1}")
+    print("Please update 'path_to_csv_no_covariates' with the correct file path.")
+
+# Process the "No Covariates" m2 results file, showing mean values
+print(f"\nProcessing 'No Covariates' data from: {path_to_csv_no_covariates_m2}")
+if os.path.exists(path_to_csv_no_covariates_m2):
+    create_time_boxplots(path_to_csv_no_covariates_m2,
+                         "No Covariates Data M2",
+                         output_dir=time_plot_output_directory,
+                         method_rename_map=user_defined_method_names,
+                         custom_palette=user_defined_palette,
+                         show_mean_value=False) # Show styled mean numerical value for this plot
+else:
+    print(f"File not found: {path_to_csv_no_covariates_m2}")
     print("Please update 'path_to_csv_no_covariates' with the correct file path.")
 
 # Process the "With Covariates" results file, also showing mean values
@@ -231,21 +244,10 @@ if os.path.exists(path_to_csv_with_covariates):
                          output_dir=time_plot_output_directory,
                          method_rename_map=user_defined_method_names,
                          custom_palette=user_defined_palette,
-                         show_mean_value=True) # Show styled mean numerical value for this plot
+                         show_mean_value=False) # Show styled mean numerical value for this plot
 else:
     print(f"File not found: {path_to_csv_with_covariates}")
     print("Please update 'path_to_csv_with_covariates' with the correct file path.")
-
-# Example of how it looks without the mean value text (show_mean_value=False)
-if os.path.exists(path_to_csv_with_covariates): # Re-use one of the files for this demo
-    create_time_boxplots(path_to_csv_with_covariates,
-                         "With Covariates Data",
-                         output_dir=time_plot_output_directory,
-                         method_rename_map=user_defined_method_names,
-                         custom_palette=user_defined_palette,
-                         show_mean_value=False) # Mean value text NOT shown
-else:
-    print(f"Skipping 'Mean Dot Only' demo as file not found: {path_to_csv_with_covariates}")
 
 
 print("\nExecution time boxplot generation complete.")

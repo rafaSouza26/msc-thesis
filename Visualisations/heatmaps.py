@@ -27,29 +27,21 @@ def create_heatmap(data_matrix, row_sums, col_sums, total_for_percentage, calcul
     fig, ax = plt.subplots(figsize=(10, 10.5))
 
     # --- Identify original zero-count cells ---
-    # These are cells that had 0 in the input data_matrix (raw counts)
-    # or were filled with 0 during reindexing because they were missing.
     original_zero_mask = (data_matrix == 0)
 
     # --- Percentage Calculation (for annotations) ---
-    # This matrix will be used for the text annotations in the cells.
     if total_for_percentage == 0:
-        percentage_matrix_annotations = data_matrix * 0 # Should be all zeros
+        percentage_matrix_annotations = data_matrix * 0
         print(f"Warning: Total sum for percentage calculation is zero for '{title}'. Percentages cannot be calculated meaningfully.")
     else:
         percentage_matrix_annotations = (data_matrix.astype(float) / total_for_percentage) * 100
 
     # --- Prepare data for heatmap coloring ---
-    # Create a copy of the percentage matrix for coloring.
-    # Values that were originally 0 count (and thus 0%) will be set to NaN.
-    # These NaN values will then be colored by cmap.set_bad().
     percentage_matrix_for_coloring = percentage_matrix_annotations.copy()
     percentage_matrix_for_coloring[original_zero_mask] = np.nan
 
     # --- Create Custom Colormap ---
-    # Get a copy of the 'viridis_r' colormap to modify
     custom_cmap = plt.cm.get_cmap('viridis_r').copy()
-    # Set the color for NaN values (which correspond to our original zero-count cells)
     custom_cmap.set_bad(color=zero_marker_color)
 
     # --- Create Heatmap ---
@@ -60,32 +52,27 @@ def create_heatmap(data_matrix, row_sums, col_sums, total_for_percentage, calcul
         'aspect': 30,
         'pad': 0.15
     }
-    heatmap = sns.heatmap(percentage_matrix_for_coloring, # Data with NaNs for special coloring
+    heatmap = sns.heatmap(percentage_matrix_for_coloring,
                           ax=ax,
-                          annot=percentage_matrix_annotations, # Annotate with original percentages (e.g., "0.0" for zeros)
+                          annot=percentage_matrix_annotations,
                           fmt=".1f",
-                          cmap=custom_cmap, # Use the modified colormap
+                          cmap=custom_cmap,
                           linewidths=.5,
                           linecolor='lightgray',
                           cbar=True,
                           cbar_kws=cbar_kws_params,
-                          vmin=0, # Percentages typically range from 0
-                          vmax=100 if total_for_percentage > 0 else 1 # Ensure vmax is valid even if all are 0
-                         )
+                          vmin=0,
+                          vmax=100 if total_for_percentage > 0 else 1,
+                          annot_kws={'size': 12}
+                          )
     
-    # If total_for_percentage is 0, all percentages are 0.
-    # The colorbar might need adjustment if vmax was set to 1 and all values are 0 or NaN.
-    # However, vmin=0, vmax=100 should handle 0% correctly by mapping it to the lowest color of viridis_r.
-    # NaNs will get 'zero_marker_color'.
-
-    # --- Adjust Colorbar Label Spacing ---
     cbar = heatmap.collections[0].colorbar
     cbar.set_label('Percentage (%)', labelpad=15)
 
     # --- Set labels, title, and ticks ---
     ax.set_xlabel('Order p', fontsize=12, labelpad=20)
     ax.set_ylabel('Order q', fontsize=12, labelpad=20)
-    ax.set_title(title, fontsize=16, pad=60) # pad increased for title spacing
+    ax.set_title(title, fontsize=16, pad=60)
 
     ax.set_xticks(np.arange(data_matrix.shape[1]) + 0.5)
     ax.set_yticks(np.arange(data_matrix.shape[0]) + 0.5)
@@ -94,69 +81,58 @@ def create_heatmap(data_matrix, row_sums, col_sums, total_for_percentage, calcul
     ax.tick_params(axis='both', which='major', labelsize=10)
     ax.tick_params(axis='x', pad=5)
     ax.tick_params(axis='y', pad=5)
-    ax.tick_params(axis='both', which='minor', length=0) # Hide minor ticks
+    ax.tick_params(axis='both', which='minor', length=0)
 
-    # --- Invert Y-axis ---
     ax.invert_yaxis()
 
-    # --- Add Marginal Totals (Row - Right Side) ---
     row_total_h_offset = 0.25
     for i, total in enumerate(row_sums):
         ax.text(data_matrix.shape[1] + row_total_h_offset, i + 0.5, f'{total}',
                 va='center', ha='left', fontsize=10)
 
-    # --- Add Marginal Totals (Column - Top Side - LOWERED POSITION) ---
     _, top_lim_axis = ax.get_ylim()
-    col_total_v_offset = 0.35 
-    col_total_y_pos = top_lim_axis + col_total_v_offset 
+    col_total_v_offset = 0.35
+    col_total_y_pos = top_lim_axis + col_total_v_offset
 
     for i, total in enumerate(col_sums):
         ax.text(i + 0.5, col_total_y_pos, f'{total}',
                 ha='center', va='bottom', fontsize=10,
-                clip_on=False) 
+                clip_on=False)
 
-    # --- Add Overall Total (Top Right - Aligned Vertically with Column Totals) ---
     ax.text(data_matrix.shape[1] + row_total_h_offset, col_total_y_pos, f'Total(n): {total_for_percentage}',
             ha='left', va='bottom', fontsize=10, fontweight='bold',
             clip_on=False)
 
-    # --- Adjust Layout for Spacing ---
     plt.subplots_adjust(left=0.15, right=0.85, top=0.80, bottom=0.18)
 
-    # --- *** SAVE PLOT *** ---
     try:
         plt.savefig(save_path, bbox_inches='tight', dpi=300)
         print(f"Plot saved successfully to: {save_path}")
     except Exception as e:
         print(f"Error saving plot to {save_path}: {e}")
 
-    # --- Show Plot (Optional, can be commented out for batch processing) ---
-    # plt.show() # Comment out if generating many plots to avoid display spam
-
-    # --- *** CLOSE PLOT FIGURE *** ---
     plt.close(fig)
 
 
-# %% Processing Function (MODIFIED TO GENERATE PLOT VARIANTS AND HANDLE SAVE PATH)
-def process_and_plot(filepath, case_label, output_dir="ingarch_heatmaps"):
+# %% Processing Function
+def process_and_plot(filepath, case_label, file_specific_main_title, output_dir="ingarch_heatmaps"):
     """
-    Loads data, processes each method, generates heatmaps with variations for zero-count cells,
+    Loads data, processes each method, generates heatmaps with black zero-count cells,
     and saves them to a specified directory with descriptive names.
 
     Args:
         filepath (str): The path to the CSV file.
-        case_label (str): Label for the dataset (e.g., "With Covariates"). Used in filename.
+        case_label (str): Label for the dataset (e.g., "With Covariates"). Used in filename & logging.
+        file_specific_main_title (str): The main title for plots generated from this file.
         output_dir (str): The directory where plots will be saved.
     """
-    # --- Create Output Directory ---
     try:
-        os.makedirs(output_dir, exist_ok=True) 
+        os.makedirs(output_dir, exist_ok=True)
         print(f"Output directory set to: {output_dir}")
     except OSError as e:
         print(f"Error creating directory {output_dir}: {e}")
-        return 
+        return
 
-    # --- File Reading and Validation ---
     if not os.path.exists(filepath):
         print(f"Error: File not found at '{filepath}'. Please check the path.")
         return
@@ -165,7 +141,6 @@ def process_and_plot(filepath, case_label, output_dir="ingarch_heatmaps"):
         df = pd.read_csv(filepath)
         print(f"--- Processing file: {os.path.basename(filepath)} ({case_label}) ---")
 
-        # --- Column Name Handling ---
         expected_cols = {'method': ['method', 'Method'],
                          'p': ['p', 'P', 'p_order'],
                          'q': ['q', 'Q', 'q_order'],
@@ -180,14 +155,14 @@ def process_and_plot(filepath, case_label, output_dir="ingarch_heatmaps"):
                 if matching_cols:
                     actual_name = matching_cols[0]
                     if standard_name != actual_name and actual_name not in rename_map:
-                         if actual_name not in rename_map.values(): 
+                        if actual_name not in rename_map.values():
                             rename_map[actual_name] = standard_name
                     found_cols[standard_name] = True
                     found = True
                     break
             if not found:
                 print(f"Error: Required column '{standard_name}' (or variations like {possible_names}) not found in {filepath}.")
-                print(f"   Available columns: {df.columns.tolist()}")
+                print(f"       Available columns: {df.columns.tolist()}")
                 return
 
         df.rename(columns=rename_map, inplace=True)
@@ -196,21 +171,14 @@ def process_and_plot(filepath, case_label, output_dir="ingarch_heatmaps"):
 
         print(f"Using standardized columns: 'method', 'p', 'q', 'count'")
 
-        total_models_expected = 1000 
+        total_models_expected = 1000
         methods_in_file = df['method'].unique()
         print(f"Methods found (standardized): {methods_in_file}")
-
-        # Define variations for zero-count cell coloring
-        zero_marker_options = {
-            "white_zeros": "white", # Filename suffix: actual color
-            "black_zeros": "black"
-        }
 
         for method in methods_in_file:
             print(f"\nProcessing Method: {method}")
             method_df = df[df['method'] == method].copy()
 
-            # --- Data Cleaning ---
             for col in ['p', 'q', 'count']:
                 method_df[col] = pd.to_numeric(method_df[col], errors='coerce')
             initial_rows = len(method_df)
@@ -218,7 +186,7 @@ def process_and_plot(filepath, case_label, output_dir="ingarch_heatmaps"):
             if len(method_df) < initial_rows:
                 print(f"Warning: Dropped {initial_rows - len(method_df)} rows with non-numeric/missing values for method '{method}'.")
             
-            if method_df.empty: # Check if dataframe is empty after dropna
+            if method_df.empty:
                 print(f"Warning: No valid data remaining for method '{method}' after cleaning. Skipping plot.")
                 continue
                 
@@ -226,7 +194,6 @@ def process_and_plot(filepath, case_label, output_dir="ingarch_heatmaps"):
             method_df['q'] = method_df['q'].astype(int)
             method_df['count'] = method_df['count'].astype(int)
 
-            # --- Pivot Data ---
             try:
                 freq_matrix = method_df.pivot_table(index='q', columns='p', values='count',
                                                     fill_value=0, aggfunc='sum')
@@ -234,61 +201,57 @@ def process_and_plot(filepath, case_label, output_dir="ingarch_heatmaps"):
                 print(f"Error pivoting data for method '{method}': {e}")
                 continue
 
-            # --- Ensure 8x8 Matrix ---
             max_order = 7
             full_index = pd.Index(range(max_order + 1), name='q')
             full_columns = pd.Index(range(max_order + 1), name='p')
             freq_matrix = freq_matrix.reindex(index=full_index, columns=full_columns, fill_value=0).astype(int)
 
-            # --- Calculate Totals ---
             row_totals = freq_matrix.sum(axis=1)
             col_totals = freq_matrix.sum(axis=0)
-            calculated_total_from_data = freq_matrix.values.sum() # This is the sum of counts from the current method's data
+            calculated_total_from_data = freq_matrix.values.sum()
             
             print(f"Data summary for method '{method}':")
-            print(f"  (File: {os.path.basename(filepath)} - Case: {case_label} - Method: {method})")
-            print(f"  - Row totals (q counts): {row_totals.tolist()}")
-            print(f"  - Column totals (p counts): {col_totals.tolist()}")
-            print(f"  - Calculated total count from data: {calculated_total_from_data}")
+            print(f"   (File: {os.path.basename(filepath)} - Case: {case_label} - Method: {method})")
+            print(f"   - Row totals (q counts): {row_totals.tolist()}")
+            print(f"   - Column totals (p counts): {col_totals.tolist()}")
+            print(f"   - Calculated total count from data: {calculated_total_from_data}")
 
-            # Use total_models_expected for percentage calculation, as in original script.
-            # The warning for mismatch is good to keep.
-            display_total_for_percentage = total_models_expected 
+            display_total_for_percentage = total_models_expected
             if calculated_total_from_data != total_models_expected:
-                print(f"  - Warning: Calculated total count from data ({calculated_total_from_data}) differs from the expected total for percentage calculation ({total_models_expected}). Percentages will be based on {total_models_expected}.")
+                print(f"   - Warning: Calculated total count from data ({calculated_total_from_data}) differs from the expected total for percentage calculation ({total_models_expected}). Percentages will be based on {total_models_expected}.")
 
-            # --- Set Base Plot Title and Filename Method Part ---
-            base_plot_title = ""
+            method_name_for_plot_title = ""
             filename_method_part = ""
             if method == 'stepwise':
-                base_plot_title = 'Stepwise'
+                method_name_for_plot_title = 'Stepwise'
                 filename_method_part = 'stepwise'
-            elif method == 'grid_search' or method == 'gridsearch': # Accommodate 'gridsearch'
-                base_plot_title = 'Grid Search'
+            elif method == 'grid_search' or method == 'gridsearch':
+                method_name_for_plot_title = 'Grid Search'
                 filename_method_part = 'grid_search'
             else:
-                base_plot_title = method.capitalize()
+                method_name_for_plot_title = method.capitalize()
                 filename_method_part = method.replace(' ', '_').lower()
             
             case_suffix_for_filename = case_label.replace(' ', '_').lower()
 
-            # Loop through zero marker options to create plot variants
-            for zero_variant_name, actual_zero_color in zero_marker_options.items():
-                # --- Construct Plot Title and Save Path for the Variant ---
-                plot_title_variant = f"{base_plot_title}" # e.g., "Stepwise (white zeros)"
-                filename = f"{filename_method_part}_{case_suffix_for_filename}_{zero_variant_name}.png"
-                save_path = os.path.join(output_dir, filename)
+            # --- Generate plot with black zero-markers only ---
+            actual_zero_color = "black"
+            zero_variant_name_for_filename = "black_zeros" # Suffix for filename
 
-                print(f"  Generating plot: {plot_title_variant} -> {filename}")
-                # --- Generate and Save Heatmap for the Variant ---
-                create_heatmap(freq_matrix, row_totals, col_totals,
-                               display_total_for_percentage, # Total for percentage calculation
-                               calculated_total_from_data,   # Actual sum from matrix (for reference, not directly used in % calc by default)
-                               plot_title_variant,
-                               save_path,
-                               actual_zero_color) # Pass the specific color for zero cells
+            # Construct final plot title
+            final_plot_title = f"{file_specific_main_title} - {method_name_for_plot_title}"
+            
+            filename = f"{filename_method_part}_{case_suffix_for_filename}_{zero_variant_name_for_filename}.png"
+            save_path = os.path.join(output_dir, filename)
 
-    # --- Error Handling ---
+            print(f"   Generating plot: '{final_plot_title}' -> {filename}")
+            create_heatmap(freq_matrix, row_totals, col_totals,
+                           display_total_for_percentage,
+                           calculated_total_from_data,
+                           final_plot_title, # Pass the new comprehensive title
+                           save_path,
+                           actual_zero_color) # Hardcoded to black
+
     except FileNotFoundError:
         print(f"Error: File not found at {filepath}")
     except pd.errors.EmptyDataError:
@@ -305,23 +268,47 @@ def process_and_plot(filepath, case_label, output_dir="ingarch_heatmaps"):
 # IMPORTANT: Replace these placeholder paths with the actual paths to your files!
 
 # --- Define your file paths here ---
-path_to_file_no_covariates = r'C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\no_covariates\ingarch_no_covariates_order_frequencies.csv'
+path_to_file_no_covariates_m1 = r'C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\no_covariates\Model1\ingarch_no_covariates_order_frequencies.csv'
+path_to_file_no_covariates_m2 = r'C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\no_covariates\Model2\ingarch_no_covariates_order_frequencies.csv'
 path_to_file_with_covariates = r'C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\with_covariates\ingarch_with_covariates_order_frequencies_combined.csv'
 
 # --- Define Output Directory ---
-plot_output_directory = "ingarch_order_heatmaps" # Define the folder name here (changed to distinguish)
+# You might want to use a new directory or keep the old one. Filenames will contain "_black_zeros".
+plot_output_directory = "ingarch_order_heatmaps" 
+
+# --- Define custom main titles for each file's plots ---
+title_for_file_no_covariates_m1 = "Order Frequencies (No Covariates - Model 1)"
+title_for_file_no_covariates_m2 = "Order Frequencies (No Covariates - Model 2)"
+title_for_file_with_covariates = "Order Frequencies (With Covariates)"
+
 
 # --- Run the processing and plotting ---
-# Pass the output directory name to the function
+# Make sure to create dummy CSV files at the placeholder paths if you want to run this example directly.
+# For actual use, replace placeholder paths and titles with your real data.
+
 if os.path.exists(path_to_file_with_covariates):
-    process_and_plot(path_to_file_with_covariates, "With Covariates", output_dir=plot_output_directory)
+    process_and_plot(path_to_file_with_covariates, 
+                     "With Covariates", 
+                     title_for_file_with_covariates, 
+                     output_dir=plot_output_directory)
 else:
     print(f"File not found: {path_to_file_with_covariates}")
 
-if os.path.exists(path_to_file_no_covariates):
-    process_and_plot(path_to_file_no_covariates, "No Covariates", output_dir=plot_output_directory)
+if os.path.exists(path_to_file_no_covariates_m1):
+    process_and_plot(path_to_file_no_covariates_m1, 
+                     "No Covariates M1", 
+                     title_for_file_no_covariates_m1, 
+                     output_dir=plot_output_directory)
 else:
-    print(f"File not found: {path_to_file_no_covariates}")
+    print(f"File not found: {path_to_file_no_covariates_m1}")
+
+if os.path.exists(path_to_file_no_covariates_m2):
+    process_and_plot(path_to_file_no_covariates_m2, 
+                     "No Covariates M2", 
+                     title_for_file_no_covariates_m2, 
+                     output_dir=plot_output_directory)
+else:
+    print(f"File not found: {path_to_file_no_covariates_m2}")
 
 
 print("\nProcessing complete.")

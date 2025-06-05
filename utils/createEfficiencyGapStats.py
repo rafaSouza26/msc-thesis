@@ -1,6 +1,3 @@
-# Install pandas: pip install pandas
-# Install numpy: pip install numpy
-
 import pandas as pd
 import numpy as np
 import os
@@ -127,29 +124,15 @@ def analyze_ingarch_csv_results(csv_file_path, target_orders):
 
 if __name__ == "__main__":
     # --- Configuration ---
-    # EXAMPLE: Replace with the actual path to your CSV file
-    csv_file_path = r'C:\Users\Rafael\Desktop\msc-thesis\SimulationResults\ingarch_with_covariates_results.csv' 
+    csv_file_path = r'C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\with_covariates\Combined\ingarch_with_covariates_results_combined.csv' 
     
     if csv_file_path == r'C:\Users\YourUser\Desktop\path_to_your_data\ingarch_results_new_columns.csv' or \
        not os.path.exists(csv_file_path):
         print(f"WARNING: The CSV file path '{csv_file_path}' is a placeholder or does not exist.")
         print("Please update the 'csv_file_path' variable in the script with the correct path to your file.")
-        if not os.path.exists(csv_file_path):
-            print("Attempting to run with dummy data as file was not found.")
-            # Updated dummy data with new column names
-            dummy_data = {
-                'method': ['stepwise', 'stepwise', 'grid_search', 'stepwise', 'stepwise', 'stepwise', 'stepwise'],
-                'p_order': [2, 1, 2, 2, 1, 2, 3],         # Renamed
-                'q_order': [6, 4, 6, 6, 5, 5, 1],         # Renamed
-                'n_models_tested': [10, 12, 100, 11, 15, 13, 9], # Renamed
-                'other_col': [1,2,3,4,5,6,7]
-            }
-            dummy_csv_path = "dummy_ingarch_results_new_columns.csv"
-            pd.DataFrame(dummy_data).to_csv(dummy_csv_path, index=False)
-            csv_file_path = dummy_csv_path 
-            print(f"Created and using dummy CSV file: {dummy_csv_path}")
+        exit()
             
-    target_pq_orders = [(2,6), (1,4), (1,5), (1,7), (2,5), (1,1), (3,3)] 
+    target_pq_orders = [(1,4),(1,5),(1,6),(2,0),(2,1),(2,4),(2,5),(2,6),(3,1)]
     # --- End Configuration ---
 
     analysis_results_df = analyze_ingarch_csv_results(csv_file_path, target_pq_orders)
@@ -173,7 +156,3 @@ if __name__ == "__main__":
         print("Sel_Freq (%) is the selection frequency as a percentage relative to all valid 'stepwise' method simulations in the input file.")
     else:
         print("No results to display. This could be due to an issue with the CSV file, the path, or no matching 'stepwise' data.")
-
-    if 'dummy_csv_path' in locals() and os.path.exists(dummy_csv_path):
-        os.remove(dummy_csv_path)
-        print(f"Cleaned up dummy CSV file: {dummy_csv_path}")
