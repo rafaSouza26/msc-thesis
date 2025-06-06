@@ -110,9 +110,13 @@ search_path_plot <- ggplot() +
   scale_shape_manual(values = shape_map, name = NULL, drop = FALSE) +
   scale_size_manual(values = size_map, name = NULL, drop = FALSE) +
   labs(title = plot_title, x = "p order", y = "q order") +
-  scale_x_continuous(breaks = 0:max_plot_order, limits = c(-0.5, max_plot_order + 0.5), expand = c(0,0)) +
-  scale_y_continuous(breaks = 0:max_plot_order, limits = c(-0.5, max_plot_order + 0.5), expand = c(0,0)) +
-  theme_bw() +
+  
+  # ----- MODIFIED LINES FOR THE NEW LIMITS -----
+scale_x_continuous(breaks = 0:4, limits = c(-0.5, 4.5), expand = c(0,0)) +
+  scale_y_continuous(breaks = 0:4, limits = c(-0.5, 4.5), expand = c(0,0)) +
+  # -----------------------------------------------
+
+theme_bw() +
   theme(
     plot.title = element_text(hjust = 0.5, size = 14, margin = margin(b = 15)),
     axis.title = element_text(size = 12),
@@ -125,9 +129,6 @@ search_path_plot <- ggplot() +
   ) +
   guides(color = guide_legend(nrow = 1))
 
+# Re-running these two lines is essential
 print(search_path_plot)
-
-# --- 6. Save the Plot ---
-output_filename <- paste0("r_arima_path_plot_target_", final_model_p, "_", final_model_q, ".png")
 ggsave(output_filename, plot = search_path_plot, width = 8, height = 8.5, dpi = 300)
-print(paste("Plot saved successfully to:", output_filename))

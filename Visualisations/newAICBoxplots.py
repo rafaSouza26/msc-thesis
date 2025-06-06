@@ -7,17 +7,17 @@ import os
 import traceback # Kept for unexpected errors
 from matplotlib.lines import Line2D # For custom legend
 
-# %% Core Plotting Function (Simplified, No Mean Value Text)
+# %% Core Plotting Function with Y-Axis Control
 def create_aic_difference_plot_for_scenario_simplified(
     best_models_filepath,
     scenario_name,
     df_ref_aic_full,
     output_dir="ingarch_aic_difference_boxplots",
     method_rename_map=None,
-    custom_palette=None): # Removed show_mean_value_on_plot
+    custom_palette=None,
+    y_limits=None): # New parameter for y-axis limits
     """
-    Creates a box plot of AIC differences for a single scenario (simplified version).
-    Only the mean dot is shown, not the numerical value.
+    Creates a box plot of AIC differences, with optional y-axis limit control.
     """
     REFERENCE_P_ORDER = 2
     REFERENCE_Q_ORDER = 6
@@ -30,10 +30,7 @@ def create_aic_difference_plot_for_scenario_simplified(
         print(f"Error reading best models file '{best_models_filepath}': {e}. Skipping scenario '{scenario_name}'.")
         return
 
-    if df_best_models.empty:
-        print(f"No data in '{best_models_filepath}'. Skipping scenario '{scenario_name}'.")
-        return
-
+    # --- Data Preparation ---
     df_best_models.rename(columns={'aic': 'aic_best_method', 'AIC': 'aic_best_method'}, inplace=True)
     if not all(col in df_best_models.columns for col in ['method', 'sim_id', 'aic_best_method']):
         print(f"Missing essential columns in '{best_models_filepath}'. Need 'method', 'sim_id', 'aic_best_method'. Skipping.")
@@ -43,9 +40,7 @@ def create_aic_difference_plot_for_scenario_simplified(
     df_best_models['sim_id'] = pd.to_numeric(df_best_models['sim_id'], errors='coerce')
     df_best_models['aic_best_method'] = pd.to_numeric(df_best_models['aic_best_method'], errors='coerce')
     df_best_models.dropna(subset=['method', 'sim_id', 'aic_best_method'], inplace=True)
-    if df_best_models.empty:
-        print(f"No valid data after cleaning in '{best_models_filepath}'. Skipping.")
-        return
+    if df_best_models.empty: return
     df_best_models['sim_id'] = df_best_models['sim_id'].astype(int)
 
     if method_rename_map:
@@ -54,9 +49,7 @@ def create_aic_difference_plot_for_scenario_simplified(
         df_best_models['display_method'] = df_best_models['method']
     
     df_ref_scenario = df_ref_aic_full[df_ref_aic_full['scenario'] == scenario_name].copy()
-    if df_ref_scenario.empty:
-        print(f"No reference AIC data for scenario '{scenario_name}'. Skipping.")
-        return
+    if df_ref_scenario.empty: return
 
     merged_df = pd.merge(
         df_best_models[['sim_id', 'display_method', 'aic_best_method']],
@@ -65,19 +58,13 @@ def create_aic_difference_plot_for_scenario_simplified(
         how='inner'
     )
 
-    if merged_df.empty or not all(col in merged_df.columns for col in ['aic_ref_2_6', 'aic_best_method']):
-        print(f"Merge resulted in empty data or missing AIC columns for '{scenario_name}'. Skipping.")
-        return
+    if merged_df.empty: return
     merged_df.dropna(subset=['aic_ref_2_6', 'aic_best_method'], inplace=True)
-    if merged_df.empty :
-        print(f"No valid AIC pairs after NaNs drop for '{scenario_name}'. Skipping.")
-        return
+    if merged_df.empty: return
         
     merged_df['aic_difference'] = merged_df['aic_ref_2_6'] - merged_df['aic_best_method']
 
-    if merged_df['display_method'].nunique() == 0:
-        print(f"No methods to plot for '{scenario_name}'. Skipping.")
-        return
+    if merged_df['display_method'].nunique() == 0: return
 
     # --- Plotting Aesthetics ---
     all_methods_in_plot_data = sorted(merged_df['display_method'].unique())
@@ -85,13 +72,9 @@ def create_aic_difference_plot_for_scenario_simplified(
     plot_order = [m for m in preferred_order_list if m in all_methods_in_plot_data]
     plot_order.extend([m for m in all_methods_in_plot_data if m not in plot_order])
 
-    if not plot_order:
-        print(f"No plot order for '{scenario_name}'. Skipping.")
-        return
+    if not plot_order: return
 
-    active_palette = None
-    if custom_palette:
-        active_palette = {k: v for k, v in custom_palette.items() if k in plot_order}
+    active_palette = {k: v for k, v in custom_palette.items() if k in plot_order} if custom_palette else None
     
     fig_width = max(6, len(plot_order) * 1.5 if len(plot_order) > 1 else 5)
     plt.figure(figsize=(fig_width, 6))
@@ -100,19 +83,22 @@ def create_aic_difference_plot_for_scenario_simplified(
                      data=merged_df, palette=active_palette, order=plot_order,
                      width=0.6, dodge=False, legend=False)
 
-    # Plot mean dot (without numerical annotation)
     for i, method_name_in_plot in enumerate(plot_order):
         method_data = merged_df[merged_df['display_method'] == method_name_in_plot]['aic_difference']
         if not method_data.empty:
             mean_val = method_data.mean()
             if pd.notnull(mean_val):
                 ax.plot(i, mean_val, marker='o', color='red', markersize=7, zorder=5, linestyle='None')
-                # Numerical annotation (ax.annotate call) has been removed
 
-    plt.title(f'AIC Difference (Ref P={REFERENCE_P_ORDER}, Q={REFERENCE_Q_ORDER})\nScenario: {scenario_name}', fontsize=12)
+    plt.title(f'AIC Difference (Ref p={REFERENCE_P_ORDER}, q={REFERENCE_Q_ORDER})\n (No Covariates M2)', fontsize=12)
     plt.xlabel('Method', fontsize=10)
     plt.ylabel(f'AIC(Ref) - AIC(Other)', fontsize=10)
     plt.axhline(0, color='grey', linestyle='--', linewidth=0.8)
+
+    # --- SET Y-AXIS LIMITS ---
+    if y_limits and isinstance(y_limits, (list, tuple)) and len(y_limits) == 2:
+        ax.set_ylim(y_limits)
+        print(f"Applied custom y-axis limits for '{scenario_name}': {y_limits}")
 
     mean_dot_legend_entry = Line2D([0], [0], marker='o', color='w', 
                                    markerfacecolor='red', markersize=7, label='Mean')
@@ -139,10 +125,10 @@ def create_aic_difference_plot_for_scenario_simplified(
 
 # %% --- Main Execution ---
 if __name__ == '__main__':
-    print("--- AIC Difference Boxplot Generation (Simplified - Mean Dot Only) ---")
+    print("--- AIC Difference Boxplot Generation (with Y-Limit Control) ---")
 
     # --- Configuration ---
-    reference_aic_master_file = r"C:\Users\Rafael\Desktop\msc-thesis\Visualisations\Models_2_6_fitted_foreachscenario_by_simulation.csv"
+    reference_aic_master_file = r"C:\Users\Rafael\Desktop\msc-thesis\Visualisations\Models_INGARCH_Fitted_All_Scenarios.csv"
     plot_output_main_directory = "ingarch_aic_difference_boxplots"
 
     user_method_display_names = {
@@ -154,7 +140,6 @@ if __name__ == '__main__':
         "Stepwise": "mediumseagreen", 
         "Grid": "#377E7F" 
     }
-    # show_numerical_mean_on_plot variable removed as it's no longer used by the function
 
     # --- Load Master Reference AIC Data ---
     df_master_ref_aics = None
@@ -163,6 +148,7 @@ if __name__ == '__main__':
     else:
         try:
             df_master_ref_aics = pd.read_csv(reference_aic_master_file)
+            # ** BUG FIX: Correctly rename the reference AIC column **
             df_master_ref_aics.rename(columns={'aic': 'aic_ref_2_6', 'AIC': 'aic_ref_2_6'}, inplace=True)
             if not all(col in df_master_ref_aics.columns for col in ['scenario', 'sim_id', 'aic_ref_2_6']):
                 raise ValueError("Reference AIC file missing 'scenario', 'sim_id', or 'aic_ref_2_6' column.")
@@ -175,40 +161,41 @@ if __name__ == '__main__':
             print(f"CRITICAL ERROR loading reference AIC file: {e_load_ref}")
             df_master_ref_aics = None
 
-    # --- Define All Possible Scenarios and Their Data Files ---
-    all_scenario_data_map = {
-        "M1": r"C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\no_covariates\Model1\ingarch_no_covariates_results.csv",
-        "M2": r"C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\no_covariates\Model2\ingarch_no_covariates_results.csv",
-        "with_covariates": r"C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\with_covariates\Combined_cpu3\ingarch_with_covariates_results.csv"
+    # --- Define All Scenarios, Files, and Custom Y-Limits ---
+    all_scenario_configs = {
+        #"M1": {
+        #    "filepath": r"C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\no_covariates\Model1\ingarch_no_covariates_results.csv",
+        #    "ylim": (-100, 100)  # Example: Zoom in for M1
+        #},
+        "M2": {
+            "filepath": r"C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\no_covariates\Model2\ingarch_no_covariates_results.csv",
+            "ylim": (-100, 100)  # Example: A wider zoom for M2
+        },
+        #"with_covariates": {
+        #    "filepath": r"C:\Users\Rafael\Desktop\msc-thesis\Results\Simulation\with_covariates\Combined_cpu3\ingarch_with_covariates_results.csv",
+        #    "ylim": (-110, 500)  # Set to None or remove line to use automatic scaling
+        #}
     }
 
     # --- CHOOSE WHICH SCENARIO(S) TO RUN ---
-    # scenarios_to_process = ["M1"] 
-    # Or uncomment and set one of these:
-    #scenarios_to_process = ["M2"]
-    scenarios_to_process = ["with_covariates"]
-    # scenarios_to_process = ["M1", "M2", "with_covariates"] # To run all
+    scenarios_to_process = ["M1", "M2", "with_covariates"] # To run all
 
     if df_master_ref_aics is not None and not df_master_ref_aics.empty:
         for scenario_key in scenarios_to_process:
-            if scenario_key in all_scenario_data_map:
-                best_models_file = all_scenario_data_map[scenario_key]
-                print(f"\nProcessing: Scenario '{scenario_key}', File '{best_models_file}'")
-                try:
-                    create_aic_difference_plot_for_scenario_simplified(
-                        best_models_filepath=best_models_file,
-                        scenario_name=scenario_key,
-                        df_ref_aic_full=df_master_ref_aics,
-                        output_dir=plot_output_main_directory,
-                        method_rename_map=user_method_display_names,
-                        custom_palette=user_plot_palette
-                        # show_mean_value_on_plot argument removed from call
-                    )
-                except Exception as e_main_loop:
-                    print(f"!! Error during processing of scenario '{scenario_key}' !!")
-                    print(f"Details: {e_main_loop}")
+            if scenario_key in all_scenario_configs:
+                config = all_scenario_configs[scenario_key]
+                print(f"\nProcessing: Scenario '{scenario_key}'")
+                create_aic_difference_plot_for_scenario_simplified(
+                    best_models_filepath=config["filepath"],
+                    scenario_name=scenario_key,
+                    df_ref_aic_full=df_master_ref_aics,
+                    output_dir=plot_output_main_directory,
+                    method_rename_map=user_method_display_names,
+                    custom_palette=user_plot_palette,
+                    y_limits=config.get("ylim") # Pass the y-limits to the function
+                )
             else:
-                print(f"Warning: Scenario key '{scenario_key}' not found in 'all_scenario_data_map'. Skipping.")
+                print(f"Warning: Scenario key '{scenario_key}' not found in 'all_scenario_configs'. Skipping.")
     else:
         print("Master reference AIC data not loaded or empty. Cannot generate plots.")
 
